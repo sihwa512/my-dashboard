@@ -70,8 +70,9 @@
 </div>
 
 <script>
-    // ★★★ 請將下方引號內換成你在第一步複製的 URL ★★★
+    // ★★★ 請確認這行已經換成你自己的 API 網址 ★★★
     const API_URL = "https://script.google.com/macros/s/AKfycbwQDoFGzE10nunz5Ib3VqJ86_YX-yYQxzBeEjYg_vg2Y87FQlucug-nsTxb5y3GaFm8Mw/exec";
+
     const stocks = [
         { id: "00662", sym: "00662.TW", name: "富邦NASDAQ" },
         { id: "00670L", sym: "00670L.TW", name: "富邦NASDAQ正2" },
@@ -84,7 +85,6 @@
         { id: "2330", sym: "2330.TW", name: "台積電" }
     ];
 
-    // 初始化表格
     window.onload = () => {
         let html = "";
         stocks.forEach(s => {
@@ -107,24 +107,21 @@
 
     function save(id) {
         localStorage.setItem('sh_'+id, document.getElementById('sh_'+id).value);
-        localStorage.setItem('co_'+id, document.getElementById('cost_'+id) ? document.getElementById('cost_'+id).value : document.getElementById('co_'+id).value);
+        localStorage.setItem('co_'+id, document.getElementById('co_'+id).value);
     }
 
     async function fetchAll() {
-        if(API_URL.includes("你的網址")) return alert("請先更換程式碼第 111 行的 API 網址！");
         const btn = document.getElementById('btn-f');
         btn.disabled = true;
-        
         for (let i = 0; i < stocks.length; i++) {
             const s = stocks[i];
-            btn.innerHTML = `正在抓取 ${s.id} (${i+1}/${stocks.length})...`;
+            btn.innerHTML = `正在抓取 ${s.id}...`;
             try {
                 const res = await fetch(`${API_URL}?symbol=${s.sym}&cache=${Date.now()}`);
                 const data = await res.json();
                 if(data.price) {
                     document.getElementById('pr_'+s.id).value = data.price;
                     document.getElementById('hi_'+s.id).innerText = data.high;
-                    // 回撤計算
                     const dd = ((data.price - data.high) / data.high * 100).toFixed(2);
                     document.getElementById('dd_'+s.id).innerHTML = `<span class="dd-val">${dd}%</span>`;
                 }
