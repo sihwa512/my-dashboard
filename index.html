@@ -137,17 +137,34 @@
                 const dd = ((pr - hi) / hi * 100).toFixed(2);
                 tCost += (sh * co); tVal += (sh * pr);
 
+                // 更新表格內的顏色與數值
                 document.getElementById('pl_'+s.id).innerHTML = `<span class="${pl>=0?'profit':'loss'}">${Math.round(pl).toLocaleString()}</span>`;
                 document.getElementById('roi_'+s.id).innerHTML = `<span class="${pl>=0?'profit':'loss'}">${roi}%</span>`;
-                document.getElementById('dd_'+s.id).innerHTML = `<span style="color:orange">${dd}%</span>`;
+                document.getElementById('dd_'+s.id).innerHTML = `<span style="color:orange; font-weight:bold;">${dd}%</span>`;
             }
         });
+
+        // --- 這裡就是新增的「總計顏色提醒」視覺強化區塊 ---
         const tPL = tVal - tCost;
         const tROI = tCost > 0 ? (tPL / tCost * 100).toFixed(2) : 0;
+        
         document.getElementById('summary').innerHTML = `
-            總投入：<strong>${Math.round(tCost).toLocaleString()}</strong> | 
-            現值：<strong>${Math.round(tVal).toLocaleString()}</strong> | 
-            損益：<span class="${tPL>=0?'profit':'loss'}">${Math.round(tPL).toLocaleString()} (${tROI}%)</span>
+            <div style="display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:20px; padding:10px;">
+                <div style="text-align:center;">
+                    <span style="color:#888; font-size:0.9rem;">總投入本金</span><br>
+                    <b style="font-size:1.5rem; color:#fff;">${Math.round(tCost).toLocaleString()}</b>
+                </div>
+                <div style="text-align:center;">
+                    <span style="color:#888; font-size:0.9rem;">目前總現值</span><br>
+                    <b style="font-size:1.5rem; color:var(--blue);">${Math.round(tVal).toLocaleString()}</b>
+                </div>
+                <div style="text-align:center; padding:10px 20px; background:rgba(255,255,255,0.05); border-radius:12px; border:1px solid ${tPL>=0?'var(--green)':'var(--red)'};">
+                    <span style="color:#888; font-size:0.9rem;">總未實現損益</span><br>
+                    <b style="font-size:1.5rem; color:${tPL>=0?'var(--green)':'var(--red)'};">
+                        ${tPL>=0?'+':''}${Math.round(tPL).toLocaleString()} (${tROI}%)
+                    </b>
+                </div>
+            </div>
         `;
     }
 
