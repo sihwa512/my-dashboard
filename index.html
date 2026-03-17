@@ -3,48 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>退休資產戰情室 V24.1</title>
+    <title>退休資產戰情室 V24.2</title>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; }
-        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 1300px; background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }
-        h2 { text-align: center; color: var(--green); margin-bottom: 20px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 10px; }
-        .privacy-toggle { cursor: pointer; font-size: 1.2rem; background: #2d303e; padding: 5px 10px; border-radius: 10px; user-select: none; }
+        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 1300px; background: var(--card); padding: 15px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }
+        h2 { text-align: center; color: var(--green); margin-bottom: 15px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 1.4rem; }
+        .privacy-toggle { cursor: pointer; font-size: 1.1rem; background: #2d303e; padding: 4px 8px; border-radius: 8px; }
         
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
-        .summary-card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 15px; border: 1px solid #444; text-align: center; }
-        .summary-card span { font-size: 0.85rem; color: #aaa; }
-        .summary-card b { font-size: 1.3rem; display: block; margin-top: 5px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        .summary-card { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 15px; border: 1px solid #444; text-align: center; }
+        .summary-card span { font-size: 0.75rem; color: #aaa; }
+        .summary-card b { font-size: 1.2rem; display: block; margin-top: 4px; }
         
-        .table-wrapper { width: 100%; overflow-x: auto; border-radius: 10px; border: 1px solid #2d303e; margin-bottom: 20px; -webkit-overflow-scrolling: touch; }
+        .table-wrapper { width: 100%; overflow-x: auto; border-radius: 10px; border: 1px solid #2d303e; margin-bottom: 15px; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; min-width: 1100px; }
-        thead th { position: sticky; top: 0; background: #1b1e2e; color: var(--blue); padding: 12px 5px; text-align: center; font-size: 0.8rem; border-bottom: 2px solid var(--blue); cursor: pointer; }
-        td { padding: 12px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.9rem; }
+        thead th { position: sticky; top: 0; background: #1b1e2e; color: var(--blue); padding: 10px 5px; text-align: center; font-size: 0.8rem; border-bottom: 2px solid var(--blue); }
+        td { padding: 10px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.85rem; }
         
-        input { background: #252836; border: 1px solid #444; color: #fff; padding: 6px; border-radius: 6px; width: 85px; text-align: center; outline: none; }
-        input:focus { border-color: var(--blue); }
-        .input-readonly { background: #1a1c23; color: #666; cursor: not-allowed; border: 1px solid #333; }
+        input { background: #252836; border: 1px solid #444; color: #fff; padding: 6px; border-radius: 6px; width: 75px; text-align: center; font-size: 0.9rem; }
+        .input-readonly { background: #1a1c23; color: #666; border: 1px solid #333; }
         
-        .privacy-mask { filter: blur(8px); opacity: 0.3; transition: 0.3s; pointer-events: none; }
+        .privacy-mask { filter: blur(8px); opacity: 0.3; pointer-events: none; }
         
-        .tools-section { display: grid; grid-template-columns: 1fr 1.5fr; gap: 15px; margin-top: 10px; }
-        .tool-box { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 15px; border: 1px solid #333; }
-        .tool-title { font-size: 0.9rem; color: var(--blue); margin-bottom: 10px; display: block; font-weight: bold; }
+        .tools-section { display: grid; grid-template-columns: 1fr 1.5fr; gap: 12px; }
+        .tool-box { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 15px; border: 1px solid #333; }
+        .tool-title { font-size: 0.85rem; color: var(--blue); margin-bottom: 8px; display: block; font-weight: bold; }
         
-        .ratio-bar-container { width: 100%; height: 28px; background: #222; border-radius: 8px; margin: 10px 0; overflow: hidden; display: flex; border: 1px solid #444; }
-        .part { transition: 1s; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.75rem; font-weight: bold; overflow: hidden; white-space: nowrap; }
+        /* 配置條優化：解決紫色過窄問題 */
+        .ratio-bar-container { width: 100%; height: 32px; background: #222; border-radius: 8px; margin: 10px 0; overflow: hidden; display: flex; border: 1px solid #444; }
+        .part { transition: 1s; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.7rem; font-weight: bold; overflow: hidden; white-space: nowrap; min-width: 20px; }
         .stock-part { background: linear-gradient(90deg, #007acc, #00d4ff); }
-        .lever-part { background: linear-gradient(90deg, #6272a4, #bd93f9); }
+        .lever-part { background: linear-gradient(90deg, #6272a4, #bd93f9); border-left: 1px solid rgba(255,255,255,0.2); border-right: 1px solid rgba(255,255,255,0.2); }
         .bond-part { background: linear-gradient(90deg, #e67e22, #ff9f1c); }
 
-        .btn-fetch { background: linear-gradient(135deg, #007acc, #00d4ff); color: white; padding: 12px 25px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-fetch:active { transform: scale(0.95); }
+        .btn-fetch { background: linear-gradient(135deg, #007acc, #00d4ff); color: white; padding: 12px 25px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; width: 100%; max-width: 300px; margin: 0 auto 15px auto; display: block; }
         .profit { color: var(--green); font-weight: bold; }
         .loss { color: var(--red); font-weight: bold; }
 
         @media (max-width: 768px) {
             .tools-section { grid-template-columns: 1fr; }
             h2 { font-size: 1.2rem; }
+            .container { padding: 10px; }
         }
     </style>
 </head>
@@ -73,17 +73,15 @@
         </table>
     </div>
 
-    <div style="text-align:center; margin-bottom: 20px;">
-        <button class="btn-fetch" onclick="fetchAll()" id="btn-f">🚀 同步即時數據</button>
-    </div>
+    <button class="btn-fetch" onclick="fetchAll()" id="btn-f">🚀 同步即時數據</button>
 
     <div class="tools-section">
         <div class="tool-box">
             <span class="tool-title">⚖️ 目標配置再平衡 (Target %)</span>
-            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <div><small style="color:var(--blue)">●股票</small><br><input type="number" id="target-s" value="40" oninput="updateTargets()"></div>
-                <div><small style="color:var(--purple)">●正2</small><br><input type="number" id="target-l" value="20" oninput="updateTargets()"></div>
-                <div><small style="color:var(--orange)">●債券</small><br><input type="number" id="target-b" value="40" class="input-readonly" readonly></div>
+            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                <div style="flex:1;"><small style="color:var(--blue)">股票</small><br><input type="number" id="target-s" value="40" style="width:100%" oninput="updateTargets()"></div>
+                <div style="flex:1;"><small style="color:var(--purple)">正2</small><br><input type="number" id="target-l" value="20" style="width:100%" oninput="updateTargets()"></div>
+                <div style="flex:1;"><small style="color:var(--orange)">債券</small><br><input type="number" id="target-b" value="40" style="width:100%" class="input-readonly" readonly></div>
             </div>
             <div class="ratio-bar-container">
                 <div id="stock-bar" class="part stock-part" style="width: 0%;"></div>
@@ -93,14 +91,14 @@
         </div>
         <div class="tool-box">
             <span class="tool-title">📈 4% 提領模擬 (SWR)</span>
-            <div style="display: flex; align-items: center; gap: 20px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
                 <div style="flex:1;">
-                    <span style="font-size: 0.8rem; color:#888;">預估年提領</span><br>
-                    <b id="annual-withdraw" style="font-size: 1.2rem; color: var(--green);">NT$ 0</b>
+                    <span style="font-size: 0.75rem; color:#888;">年提領</span><br>
+                    <b id="annual-withdraw" style="font-size: 1.1rem; color: var(--green);">NT$ 0</b>
                 </div>
                 <div style="flex:1;">
-                    <span style="font-size: 0.8rem; color:#888;">預估月提領</span><br>
-                    <b id="monthly-withdraw" style="font-size: 1.5rem; color: var(--blue);">NT$ 0</b>
+                    <span style="font-size: 0.75rem; color:#888;">月提領</span><br>
+                    <b id="monthly-withdraw" style="font-size: 1.3rem; color: var(--blue);">NT$ 0</b>
                 </div>
             </div>
         </div>
@@ -110,11 +108,11 @@
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyVqkIKdI1gC50Nd5MKNYGuSjN5flQF7q2E8_BRkFKhHjs3A7JkQrr_BjgnVK0qa8P0dg/exec";
     const initialStocks = [
-        { id: "00662", sym: "00662.TW", name: "富邦NASDAQ" },
-        { id: "00670L", sym: "00670L.TW", name: "富邦NASDAQ正2" },
-        { id: "00865B", sym: "00865B.TW", name: "國泰美債0-1年" },
-        { id: "0050", sym: "0050.TW", name: "元大台灣50" },
-        { id: "2330", sym: "2330.TW", name: "台積電" }
+        { id: "00662", sym: "00662.TW" },
+        { id: "00670L", sym: "00670L.TW" },
+        { id: "00865B", sym: "00865B.TW" },
+        { id: "0050", sym: "0050.TW" },
+        { id: "2330", sym: "2330.TW" }
     ];
 
     let displayStocks = JSON.parse(localStorage.getItem('displayStocks')) || initialStocks;
@@ -122,11 +120,7 @@
     let isPrivate = localStorage.getItem('privacy') === 'true';
     let sortDir = true;
 
-    window.onload = () => { 
-        updateEyeIcon();
-        renderTable(); 
-        calculate(); 
-    };
+    window.onload = () => { updateEyeIcon(); renderTable(); calculate(); };
 
     function getStockType(id) {
         if (id.includes('B')) return 'B';
@@ -141,16 +135,13 @@
         calculate();
     }
 
-    function updateEyeIcon() {
-        document.getElementById('eye-icon').innerText = isPrivate ? '🙈' : '👁️';
-    }
+    function updateEyeIcon() { document.getElementById('eye-icon').innerText = isPrivate ? '🙈' : '👁️'; }
 
     function updateTargets() {
         let s = Number(document.getElementById('target-s').value) || 0;
         let l = Number(document.getElementById('target-l').value) || 0;
         let b = 100 - s - l;
         document.getElementById('target-b').value = b;
-        document.getElementById('target-b').style.color = b < 0 ? "var(--red)" : "#666";
         calculate();
     }
 
@@ -167,7 +158,7 @@
             const co = localStorage.getItem('co_'+s.id) || "0";
             const pD = currentPrices[s.id] || { price: 0 };
             html += `<tr>
-                <td><span class="stock-id" title="${s.name}">${s.id}</span></td>
+                <td><span class="stock-id">${s.id}</span></td>
                 <td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td>
                 <td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td>
                 <td id="mkt_${s.id}">-</td>
@@ -222,13 +213,16 @@
             const sh = Number(localStorage.getItem('sh_'+s.id)) || 0;
             const co = Number(localStorage.getItem('co_'+s.id)) || 0;
             const pD = currentPrices[s.id];
-            const mktCell = document.getElementById('mkt_'+s.id);
-            const rebCell = document.getElementById('reb_'+s.id);
             
             if (sh > 0 && pD && pD.price > 0) {
                 const mkt = sh * pD.price; tCost += (sh * co);
-                let prev = Number(pD.prevClose) || pD.price;
-                tDayChange += (pD.price - prev) * sh;
+                
+                // 強度校正今日變動計算
+                let current = parseFloat(pD.price);
+                let prev = parseFloat(pD.prevClose);
+                if (!isNaN(current) && !isNaN(prev) && prev > 0) {
+                    tDayChange += (current - prev) * sh;
+                }
                 
                 const pl = (pD.price - co) * sh;
                 const roi = ((pD.price - co) / co * 100).toFixed(2);
@@ -243,8 +237,10 @@
                 else if (sType === 'L' && lVal > 0) stockRebDiff = diffL * (mkt / lVal);
                 else if (sType === 'B' && bVal > 0) stockRebDiff = diffB * (mkt / bVal);
 
-                mktCell.innerText = Math.round(mkt).toLocaleString();
-                mktCell.className = isPrivate ? 'privacy-mask' : '';
+                const mktEl = document.getElementById('mkt_'+s.id);
+                mktEl.innerText = Math.round(mkt).toLocaleString();
+                mktEl.className = isPrivate ? 'privacy-mask' : '';
+                
                 document.getElementById('price_'+s.id).innerText = pD.price;
                 document.getElementById('roi_'+s.id).innerHTML = `<span class="${pl>=0?'profit':'loss'}">${roi}%</span>`;
                 document.getElementById('dd_'+s.id).innerText = dd + "%";
@@ -252,8 +248,9 @@
                 document.getElementById('rat_'+s.id).innerText = rat + "%";
                 
                 let color = stockRebDiff >= 0 ? 'var(--green)' : 'var(--red)';
-                rebCell.innerHTML = `<span style="color:${color}; font-size:0.75rem;">${stockRebDiff >= 0 ? '加碼' : '減碼'}<br>${Math.abs(Math.round(stockRebDiff)).toLocaleString()}</span>`;
-                rebCell.className = isPrivate ? 'privacy-mask' : '';
+                const rebEl = document.getElementById('reb_'+s.id);
+                rebEl.innerHTML = `<span style="color:${color}; font-size:0.75rem;">${stockRebDiff >= 0 ? '加碼' : '減碼'}<br>${Math.abs(Math.round(stockRebDiff)).toLocaleString()}</span>`;
+                rebEl.className = isPrivate ? 'privacy-mask' : '';
             }
         });
 
@@ -264,7 +261,7 @@
             <div class="summary-card"><span>總市值</span><br><b class="${isPrivate?'privacy-mask':''}" style="color:var(--blue)">${Math.round(tVal).toLocaleString()}</b></div>
             <div class="summary-card"><span>今日變動</span><br><b class="${isPrivate?'privacy-mask':''}" style="color:${tDayChange>=0?'var(--green)':'var(--red)'}">${tDayChange>=0?'+':''}${Math.round(tDayChange).toLocaleString()}</b></div>
             <div class="summary-card" style="border:2px solid ${tPL>=0?'var(--green)':'var(--red)'}"><span>累積損益</span><br><b class="${isPrivate?'privacy-mask':''}" style="color:${tPL>=0?'var(--green)':'var(--red)'}">${Math.round(tPL).toLocaleString()} (${tROI}%)</b></div>
-            <div class="summary-card" style="border:1px solid var(--orange)"><span>風險溫度計 (組合回撤)</span><br><b style="color:var(--red)">${tDrawdown.toFixed(2)}%</b></div>`;
+            <div class="summary-card" style="border:1px solid var(--orange)"><span>組合回撤</span><br><b style="color:var(--red)">${tDrawdown.toFixed(2)}%</b></div>`;
 
         const annual = tVal * 0.04, monthly = annual / 12;
         const aW = document.getElementById('annual-withdraw'), mW = document.getElementById('monthly-withdraw');
@@ -274,9 +271,10 @@
 
         if (tVal > 0) {
             const sp = (sVal/tVal*100).toFixed(1), lp = (lVal/tVal*100).toFixed(1), bp = (bVal/tVal*100).toFixed(1);
-            document.getElementById('stock-bar').style.width = sp+'%'; document.getElementById('stock-bar').innerText = sp > 5 ? `股票 ${sp}%` : '';
-            document.getElementById('lever-bar').style.width = lp+'%'; document.getElementById('lever-bar').innerText = lp > 5 ? `正2 ${lp}%` : '';
-            document.getElementById('bond-bar').style.width = bp+'%'; document.getElementById('bond-bar').innerText = bp > 5 ? `債券 ${bp}%` : '';
+            const sb = document.getElementById('stock-bar'), lb = document.getElementById('lever-bar'), bb = document.getElementById('bond-bar');
+            sb.style.width = sp+'%'; sb.innerText = sp > 12 ? `股票 ${sp}%` : `${sp}%`;
+            lb.style.width = lp+'%'; lb.innerText = lp > 12 ? `正2 ${lp}%` : `${lp}%`;
+            bb.style.width = bp+'%'; bb.innerText = bp > 12 ? `債券 ${bp}%` : `${bp}%`;
         }
     }
 
