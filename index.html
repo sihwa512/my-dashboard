@@ -3,41 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V24.3</title>
+    <title>退休資產戰情室 V24.4</title>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; }
         body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 1300px; background: var(--card); padding: 15px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; box-sizing: border-box; }
         h2 { text-align: center; color: var(--green); margin-bottom: 15px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 1.3rem; }
-        .privacy-toggle { cursor: pointer; font-size: 1.2rem; background: #2d303e; padding: 6px 12px; border-radius: 10px; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
-        .privacy-toggle:active { transform: scale(0.9); background: #3d4155; }
+        
+        /* 強化手機按鈕點擊感 */
+        .privacy-toggle { cursor: pointer; font-size: 1.2rem; background: #2d303e; padding: 8px 15px; border-radius: 12px; transition: 0.2s; -webkit-tap-highlight-color: transparent; border: 1px solid #444; }
+        .privacy-toggle:active { background: #444; transform: scale(0.92); }
         
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px; }
-        .summary-card { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 15px; border: 1px solid #444; text-align: center; min-height: 70px; display: flex; flex-direction: column; justify-content: center; }
+        .summary-card { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 15px; border: 1px solid #444; text-align: center; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
         .summary-card span { font-size: 0.75rem; color: #aaa; margin-bottom: 4px; }
-        .summary-card b { font-size: 1.2rem; display: block; }
+        .summary-card b { font-size: 1.2rem; display: block; transition: 0.3s; }
         
         .table-wrapper { width: 100%; overflow-x: auto; border-radius: 10px; border: 1px solid #2d303e; margin-bottom: 15px; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; min-width: 1000px; }
-        thead th { position: sticky; top: 0; background: #1b1e2e; color: var(--blue); padding: 12px 5px; text-align: center; font-size: 0.8rem; border-bottom: 2px solid var(--blue); }
+        thead th { position: sticky; top: 0; background: #1b1e2e; color: var(--blue); padding: 12px 5px; text-align: center; font-size: 0.8rem; border-bottom: 2px solid var(--blue); cursor: pointer; }
         td { padding: 12px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.85rem; }
         
-        input { background: #252836; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 6px; width: 80px; text-align: center; font-size: 1rem; -webkit-appearance: none; }
-        .input-readonly { background: #1a1c23; color: #666; border: 1px solid #333; }
+        input { background: #252836; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 8px; width: 85px; text-align: center; font-size: 1rem; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--blue); background: #2d3142; }
+        .input-readonly { background: #1a1c23; color: #666; border: 1px solid #333; cursor: not-allowed; }
         
-        .privacy-mask { filter: blur(10px) grayscale(100%); opacity: 0.2; pointer-events: none; transition: 0.3s; }
+        .privacy-mask { filter: blur(10px); opacity: 0.15; pointer-events: none; user-select: none; }
         
         .tools-section { display: grid; grid-template-columns: 1fr 1.2fr; gap: 12px; width: 100%; }
         .tool-box { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 15px; border: 1px solid #333; box-sizing: border-box; }
         .tool-title { font-size: 0.85rem; color: var(--blue); margin-bottom: 10px; display: block; font-weight: bold; }
         
-        .ratio-bar-container { width: 100%; height: 32px; background: #222; border-radius: 8px; margin: 10px 0; overflow: hidden; display: flex; border: 1px solid #444; }
-        .part { transition: 1s; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.7rem; font-weight: bold; overflow: hidden; white-space: nowrap; min-width: 5px; }
+        .ratio-bar-container { width: 100%; height: 34px; background: #222; border-radius: 10px; margin: 10px 0; overflow: hidden; display: flex; border: 1px solid #444; }
+        .part { transition: 1s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.75rem; font-weight: bold; overflow: hidden; white-space: nowrap; min-width: 8px; }
         .stock-part { background: linear-gradient(90deg, #007acc, #00d4ff); }
         .lever-part { background: linear-gradient(90deg, #6272a4, #bd93f9); border-left: 1px solid rgba(255,255,255,0.2); border-right: 1px solid rgba(255,255,255,0.2); }
         .bond-part { background: linear-gradient(90deg, #e67e22, #ff9f1c); }
 
-        .btn-fetch { background: linear-gradient(135deg, #007acc, #00d4ff); color: white; padding: 14px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; width: 100%; margin: 0 auto 15px auto; display: block; font-size: 1rem; }
+        .btn-fetch { background: linear-gradient(135deg, #007acc, #00d4ff); color: white; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; width: 100%; margin: 0 auto 15px auto; display: block; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(0, 122, 204, 0.3); }
+        .btn-fetch:active { transform: translateY(2px); box-shadow: none; }
         .profit { color: var(--green); } .loss { color: var(--red); }
 
         @media (max-width: 768px) {
@@ -77,9 +81,9 @@
         <div class="tool-box">
             <span class="tool-title">⚖️ 目標配置再平衡 (Target %)</span>
             <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                <div style="flex:1;"><small style="color:var(--blue)">股票</small><br><input type="number" id="target-s" value="40" style="width:100%" oninput="updateTargets()"></div>
-                <div style="flex:1;"><small style="color:var(--purple)">正2</small><br><input type="number" id="target-l" value="20" style="width:100%" oninput="updateTargets()"></div>
-                <div style="flex:1;"><small style="color:var(--orange)">債券</small><br><input type="number" id="target-b" value="40" style="width:100%" class="input-readonly" readonly></div>
+                <div style="flex:1;"><small style="color:var(--blue)">●股票</small><br><input type="number" id="target-s" value="40" style="width:100%" oninput="updateTargets()"></div>
+                <div style="flex:1;"><small style="color:var(--purple)">●正2</small><br><input type="number" id="target-l" value="20" style="width:100%" oninput="updateTargets()"></div>
+                <div style="flex:1;"><small style="color:var(--orange)">●債券</small><br><input type="number" id="target-b" value="40" style="width:100%" class="input-readonly" readonly></div>
             </div>
             <div class="ratio-bar-container">
                 <div id="stock-bar" class="part stock-part" style="width: 0%;"></div>
@@ -91,11 +95,11 @@
             <span class="tool-title">📈 4% 提領模擬 (SWR)</span>
             <div style="display: flex; align-items: center; gap: 15px;">
                 <div style="flex:1;">
-                    <span style="font-size: 0.75rem; color:#888;">年提領</span><br>
+                    <span style="font-size: 0.75rem; color:#888;">預估年提領</span><br>
                     <b id="annual-withdraw" style="font-size: 1.1rem; color: var(--green);">NT$ 0</b>
                 </div>
                 <div style="flex:1;">
-                    <span style="font-size: 0.75rem; color:#888;">月提領</span><br>
+                    <span style="font-size: 0.75rem; color:#888;">預估月提領</span><br>
                     <b id="monthly-withdraw" style="font-size: 1.3rem; color: var(--blue);">NT$ 0</b>
                 </div>
             </div>
@@ -115,7 +119,13 @@
     let isPrivate = localStorage.getItem('privacy') === 'true';
     let sortDir = true;
 
-    window.onload = () => { updateEyeUI(); renderTable(); calculate(); };
+    window.onload = () => { 
+        updateEyeUI(); 
+        renderTable(); 
+        calculate(); 
+        // 解決手機進入時今日變動顯示問題，延遲1秒自動計算一次
+        setTimeout(calculate, 1000);
+    };
 
     function getStockType(id) {
         if (id.includes('B')) return 'B';
@@ -167,7 +177,7 @@
 
     async function fetchAll() {
         const btn = document.getElementById('btn-f');
-        btn.disabled = true; btn.innerHTML = "📡 同步中...";
+        btn.disabled = true; btn.innerHTML = "📡 數據同步中...";
         for (let s of displayStocks) {
             try {
                 const res = await fetch(`${API_URL}?symbol=${s.sym}&cache=${Date.now()}`);
@@ -206,7 +216,10 @@
             const p = currentPrices[s.id];
             if (sh > 0 && p && p.price > 0) {
                 const m = sh * p.price; tCost += (sh * co);
-                let pc = parseFloat(p.prevClose) || p.price;
+                
+                // 強度校正：確保昨日收盤價計算今日變動
+                let pc = parseFloat(p.prevClose);
+                if (isNaN(pc) || pc <= 0) pc = p.price; 
                 tDayChange += (p.price - pc) * sh;
                 
                 const roi = ((p.price - co) / co * 100).toFixed(2);
@@ -224,10 +237,12 @@
                 const mEl = document.getElementById('mkt_'+s.id);
                 mEl.innerText = Math.round(m).toLocaleString();
                 mEl.className = isPrivate ? 'privacy-mask' : '';
+                
                 document.getElementById('roi_'+s.id).innerHTML = `<span class="${p.price>=co?'profit':'loss'}">${roi}%</span>`;
                 document.getElementById('dd_'+s.id).innerText = dd + "%";
                 document.getElementById('ytd_'+s.id).innerHTML = `<span class="${ytd>=0?'profit':'loss'}">${ytd}%</span>`;
                 document.getElementById('rat_'+s.id).innerText = rat + "%";
+                
                 const rEl = document.getElementById('reb_'+s.id);
                 rEl.innerHTML = `<span class="${reb>=0?'profit':'loss'}" style="font-size:0.75rem;">${reb>=0?'加碼':'減碼'}<br>${Math.abs(Math.round(reb)).toLocaleString()}</span>`;
                 rEl.className = isPrivate ? 'privacy-mask' : '';
@@ -236,7 +251,8 @@
 
         const pl = tVal - tCost;
         const pPct = tCost > 0 ? (pl / tCost * 100).toFixed(2) : 0;
-        document.getElementById('summary-grid').innerHTML = `
+        const grid = document.getElementById('summary-grid');
+        grid.innerHTML = `
             <div class="summary-card"><span>總市值</span><br><b class="${isPrivate?'privacy-mask':''}" style="color:var(--blue)">${Math.round(tVal).toLocaleString()}</b></div>
             <div class="summary-card"><span>今日變動</span><br><b class="${isPrivate?'privacy-mask':''}" style="color:${tDayChange>=0?'var(--green)':'var(--red)'}">${tDayChange>=0?'+':''}${Math.round(tDayChange).toLocaleString()}</b></div>
             <div class="summary-card" style="border:2px solid ${pl>=0?'var(--green)':'var(--red)'}"><span>累積損益</span><br><b class="${isPrivate?'privacy-mask':''}" style="color:${pl>=0?'var(--green)':'var(--red)'}">${Math.round(pl).toLocaleString()} (${pPct}%)</b></div>
@@ -251,9 +267,9 @@
         if (tVal > 0) {
             const sp = (sVal/tVal*100).toFixed(1), lp = (lVal/tVal*100).toFixed(1), bp = (bVal/tVal*100).toFixed(1);
             const sb = document.getElementById('stock-bar'), lb = document.getElementById('lever-bar'), bb = document.getElementById('bond-bar');
-            sb.style.width = sp+'%'; sb.innerText = sp > 5 ? `${sp}%` : '';
-            lb.style.width = lp+'%'; lb.innerText = lp > 5 ? `${lp}%` : '';
-            bb.style.width = bp+'%'; bb.innerText = bp > 5 ? `${bp}%` : '';
+            sb.style.width = sp+'%'; sb.innerText = sp > 8 ? `${sp}%` : '';
+            lb.style.width = lp+'%'; lb.innerText = lp > 8 ? `${lp}%` : '';
+            bb.style.width = bp+'%'; bb.innerText = bp > 8 ? `${bp}%` : '';
         }
     }
 
@@ -263,8 +279,11 @@
             const getV = (s) => {
                 const sh = Number(localStorage.getItem('sh_'+s.id)) || 0;
                 const p = currentPrices[s.id]?.price || 0;
-                if(type === 'market') return sh * p;
-                if(type === 'ratio') return sh * p;
+                if(type === 'market' || type === 'ratio') return sh * p;
+                if(type === 'roi') {
+                    const co = Number(localStorage.getItem('co_'+s.id)) || 0;
+                    return co > 0 ? (p - co) / co : -1;
+                }
                 return s.id;
             };
             return sortDir ? (getV(a) > getV(b) ? 1 : -1) : (getV(a) < getV(b) ? 1 : -1);
