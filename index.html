@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>綜合資產戰情室 V21.0</title>
+    <title>綜合資產戰情室 V21.1</title>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; }
         body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
@@ -39,7 +39,7 @@
 </head>
 <body>
 <div class="container">
-    <h2>📊 綜合資產戰情室 <small style="font-size: 12px; color:#666;">V21.0 數據精確版</small></h2>
+    <h2>📊 綜合資產戰情室 <small style="font-size: 12px; color:#666;">V21.1 終極校正版</small></h2>
     <div class="table-wrapper">
         <table>
             <thead>
@@ -116,9 +116,25 @@
     function renderTable() {
         let html = "";
         displayStocks.forEach((s, index) => {
-            const sh = localStorage.getItem('sh_'+s.id) || "", co = localStorage.getItem('co_'+s.id) || "";
+            const sh = localStorage.getItem('sh_'+s.id) || "0";
+            const co = localStorage.getItem('co_'+s.id) || "0";
             const pD = currentPrices[s.id] || { price: 0 };
-            html += `<tr><td><span class="move-btn" onclick="moveRow(${index}, -1)">▲</span><span class="move-btn" onclick="moveRow(${index}, 1)">▼</span></td><td><span class="stock-id">${s.id}</span><span class="stock-name">${s.name}</span></td><td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td><td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td><td id="cost_${s.id}" class="val-text">-</td><td id="mkt_${s.id}" class="val-text">-</td><td>${pD.price || '...'}</td><td id="pl_${s.id}">-</td><td id="roi_${s.id}">-</td><td id="dd_${s.id}">-</td><td id="ytd_${s.id}">-</td><td id="rat_${s.id}">-</td></tr>`;
+            const dispPrice = pD.price > 0 ? pD.price : "...";
+            
+            html += `<tr>
+                <td><span class="move-btn" onclick="moveRow(${index}, -1)">▲</span><span class="move-btn" onclick="moveRow(${index}, 1)">▼</span></td>
+                <td><span class="stock-id">${s.id}</span><span class="stock-name">${s.name}</span></td>
+                <td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td>
+                <td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td>
+                <td id="cost_${s.id}" class="val-text">-</td>
+                <td id="mkt_${s.id}" class="val-text">-</td>
+                <td id="price_${s.id}">${dispPrice}</td>
+                <td id="pl_${s.id}">-</td>
+                <td id="roi_${s.id}">-</td>
+                <td id="dd_${s.id}">-</td>
+                <td id="ytd_${s.id}">-</td>
+                <td id="rat_${s.id}">-</td>
+            </tr>`;
         });
         document.getElementById('list').innerHTML = html;
         if(Object.keys(currentPrices).length > 0) calculate();
@@ -142,7 +158,8 @@
                 }
             } catch (e) { console.error(e); }
         }
-        btn.innerHTML = "✅ 同步完成"; calculate();
+        btn.innerHTML = "✅ 同步完成";
+        renderTable(); // 強制重新渲染確保最新股價欄位更新
         setTimeout(() => { btn.innerHTML = "🚀 同步即時數據"; btn.disabled = false; }, 2000);
     }
 
@@ -151,11 +168,13 @@
         let sVal = 0, lVal = 0, bVal = 0;
 
         displayStocks.forEach(s => {
-            const sh = Number(localStorage.getItem('sh_'+s.id)), co = Number(localStorage.getItem('co_'+s.id)), pr = currentPrices[s.id]?.price || 0, pc = currentPrices[s.id]?.prevClose || 0;
+            const sh = Number(localStorage.getItem('sh_'+s.id)) || 0;
+            const co = Number(localStorage.getItem('co_'+s.id)) || 0;
+            const pr = currentPrices[s.id]?.price || 0;
+            const pc = currentPrices[s.id]?.prevClose || 0;
             if (sh > 0 && pr > 0) {
                 const mkt = sh * pr; tCost += (sh * co); tVal += mkt;
                 if (pc > 0) tDayChange += (pr - pc) * sh;
-                // 自動分類邏輯強化
                 if (s.id.includes('B')) bVal += mkt;
                 else if (s.id.includes('L')) lVal += mkt;
                 else sVal += mkt;
@@ -163,17 +182,20 @@
         });
 
         displayStocks.forEach(s => {
-            const sh = Number(localStorage.getItem('sh_'+s.id)), co = Number(localStorage.getItem('co_'+s.id)), pr = currentPrices[s.id]?.price || 0;
+            const sh = Number(localStorage.getItem('sh_'+s.id)) || 0;
+            const co = Number(localStorage.getItem('co_'+s.id)) || 0;
+            const pr = currentPrices[s.id]?.price || 0;
             const ytdOpen = currentPrices[s.id]?.ytdOpen || pr;
             let hi = currentPrices[s.id]?.high || 0; if (hi > pr * 4) hi = pr;
             const mktValue = sh * pr;
             const rat = tVal > 0 ? (mktValue / tVal * 100).toFixed(1) : 0;
-            weightedExp += (mktValue / tVal) * (s.exp || 0);
+            weightedExp += tVal > 0 ? (mktValue / tVal) * (s.exp || 0) : 0;
 
             if (sh > 0 && pr > 0) {
                 const pl = (pr - co) * sh, roi = ((pr - co) / co * 100).toFixed(2), dd = hi > 0 ? ((pr - hi) / hi * 100).toFixed(2) : "0.00", ytdPct = ((pr - ytdOpen) / ytdOpen * 100).toFixed(2);
                 document.getElementById('cost_'+s.id).innerText = Math.round(sh * co).toLocaleString();
                 document.getElementById('mkt_'+s.id).innerText = Math.round(mktValue).toLocaleString();
+                document.getElementById('price_'+s.id).innerText = pr;
                 document.getElementById('pl_'+s.id).innerHTML = `<span class="${pl>=0?'profit':'loss'}">${Math.round(pl).toLocaleString()}</span>`;
                 document.getElementById('roi_'+s.id).innerHTML = `<span class="${pl>=0?'profit':'loss'}">${roi}%</span>`;
                 document.getElementById('dd_'+s.id).innerHTML = `<span style="color:var(--orange)">${dd}%</span>`;
@@ -202,24 +224,5 @@
         sortDir = !sortDir;
         displayStocks.sort((a, b) => {
             let vA = 0, vB = 0;
-            const shA = Number(localStorage.getItem('sh_'+a.id)), prA = currentPrices[a.id]?.price || 0, coA = Number(localStorage.getItem('co_'+a.id)), yA = currentPrices[a.id]?.ytdOpen || prA;
-            const shB = Number(localStorage.getItem('sh_'+b.id)), prB = currentPrices[b.id]?.price || 0, coB = Number(localStorage.getItem('co_'+b.id)), yB = currentPrices[b.id]?.ytdOpen || prB;
-            if(type === 'price') vA = prA, vB = prB;
-            else if(type === 'cost') vA = shA * coA, vB = shB * coB;
-            else if(type === 'market') vA = shA * prA, vB = shB * prB;
-            else if(type === 'pl') vA = (prA - coA) * shA, vB = (prB - coB) * shB;
-            else if(type === 'roi') vA = coA > 0 ? (prA - coA) / coA : -99, vB = coB > 0 ? (prB - coB) / coB : -99;
-            else if(type === 'ytd') vA = (prA - yA)/yA, vB = (prB - yB)/yB;
-            else if(type === 'dd') {
-                let hA = (currentPrices[a.id]?.high > prA * 4) ? prA : (currentPrices[a.id]?.high || prA);
-                let hB = (currentPrices[b.id]?.high > prB * 4) ? prB : (currentPrices[b.id]?.high || prB);
-                vA = (prA - hA) / hA, vB = (prB - hB) / hB;
-            }
-            else if(type === 'ratio') vA = shA * prA, vB = shB * prB;
-            return sortDir ? vA - vB : vB - vA;
-        });
-        renderTable();
-    }
-</script>
-</body>
-</html>
+            const shA = Number(localStorage.getItem('sh_'+a.id)) || 0, prA = currentPrices[a.id]?.price || 0, coA = Number(localStorage.getItem('co_'+a.id)) || 0, yA = currentPrices[a.id]?.ytdOpen || prA;
+            const shB = Number(localStorage.getItem('sh_'+b.id)) || 0, prB = currentPrices[b.id]?.price || 0, coB = Number(localStorage.getItem('co_'+b.id)) || 0, yB = currentPrices[b.id]?.ytdOpen
