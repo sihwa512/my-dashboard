@@ -3,25 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V27.0</title>
+    <title>退休資產戰情室 V27.1</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; }
         body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 12px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 1300px; background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 1px solid #333; box-sizing: border-box; }
         
-        h2 { text-align: center; color: var(--green); margin-bottom: 20px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 1.5rem; }
+        /* 標題與隱私按鈕優化 */
+        h2 { text-align: center; color: var(--green); margin-bottom: 20px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 1.5rem; flex-wrap: wrap; }
+        .title-text { white-space: nowrap; }
         .privacy-toggle { cursor: pointer; font-size: 1.3rem; background: #2d303e; padding: 8px 16px; border-radius: 12px; border: 1px solid #444; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
-        
+        .privacy-toggle:hover { background: #3d4155; }
+
         /* 5 格卡片自適應 */
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
         .summary-card { background: linear-gradient(145deg, #1b1e2e, #161926); padding: 15px; border-radius: 15px; border: 1px solid #444; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .summary-card span { font-size: 0.8rem; color: #888; letter-spacing: 1px; }
         .summary-card b { font-size: 1.4rem; display: block; margin-top: 8px; font-family: 'Consolas', monospace; }
         
-        /* 圖表區塊 */
-        .chart-container { width: 100%; height: 220px; background: rgba(0,0,0,0.2); border-radius: 15px; border: 1px solid #333; padding: 10px; margin-bottom: 20px; box-sizing: border-box; transition: 0.3s; }
-        
+        /* 圖表區塊 (新增內部標題空間) */
+        .chart-container { width: 100%; height: 260px; background: rgba(0,0,0,0.2); border-radius: 15px; border: 1px solid #333; padding: 15px; margin-bottom: 20px; box-sizing: border-box; transition: 0.3s; display: flex; flex-direction: column; }
+        .chart-header { color: var(--blue); font-weight: bold; font-size: 0.95rem; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .canvas-wrapper { flex: 1; position: relative; width: 100%; }
+
         .table-wrapper { width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid #2d303e; margin-bottom: 20px; background: #1b1e2e; }
         table { width: 100%; border-collapse: collapse; min-width: 1100px; }
         thead th { position: sticky; top: 0; background: #252836; color: var(--blue); padding: 15px 5px; text-align: center; font-size: 0.85rem; border-bottom: 2px solid var(--blue); cursor: pointer; }
@@ -31,27 +36,42 @@
         .input-readonly { background: #1a1c23; color: #777; border: 1px solid #333; cursor: not-allowed; }
         .privacy-mask { filter: blur(12px); opacity: 0.15; pointer-events: none; transition: 0.3s; }
         
+        /* 比例條優化 */
         .ratio-bar-container { width: 100%; height: 45px; background: #111; border-radius: 12px; margin: 15px 0; overflow: hidden; display: flex; border: 2px solid #333; }
-        .part { height: 100%; transition: 1.2s cubic-bezier(0.18, 0.89, 0.32, 1.28); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.85rem; font-weight: bold; white-space: nowrap; }
+        .part { height: 100%; transition: 1.2s cubic-bezier(0.18, 0.89, 0.32, 1.28); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.85rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: clip; }
         .stock-part { background: linear-gradient(90deg, #007acc, #00d4ff); }
-        .lever-part { background: linear-gradient(90deg, #6272a4, #bd93f9); border-left: 2px solid rgba(0,0,0,0.5); border-right: 2px solid rgba(0,0,0,0.5); min-width: 100px; flex-shrink: 0; }
+        .lever-part { background: linear-gradient(90deg, #6272a4, #bd93f9); border-left: 2px solid rgba(0,0,0,0.5); border-right: 2px solid rgba(0,0,0,0.5); min-width: 100px; }
         .bond-part { background: linear-gradient(90deg, #e67e22, #ff9f1c); }
 
         .btn-fetch { background: linear-gradient(135deg, #007acc, #00d4ff); color: white; padding: 18px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 25px; font-size: 1.2rem; box-shadow: 0 6px 20px rgba(0, 122, 204, 0.4); transition: 0.3s; }
         .btn-fetch:active { transform: translateY(2px); box-shadow: none; }
         .withdraw-input { width: 65px; background: #1b1e2e; border: 2px solid var(--blue); color: var(--blue); padding: 5px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
+        /* 手機版專屬細節調整 */
         @media (max-width: 768px) {
-            .summary-grid { grid-template-columns: repeat(2, 1fr); }
-            /* 讓匯率卡片在手機端佔滿整行 */
-            .summary-grid > div:first-child { grid-column: span 2; }
-            .chart-container { height: 180px; }
+            .container { padding: 12px; border-radius: 0; }
+            h2 { font-size: 1.25rem; margin-bottom: 15px; }
+            .privacy-toggle { font-size: 1.1rem; padding: 6px 12px; }
+            
+            .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
+            .summary-grid > div:first-child { grid-column: span 2; } /* 匯率卡片佔滿 */
+            .summary-card { padding: 12px; }
+            .summary-card b { font-size: 1.2rem; }
+            
+            .chart-container { height: 220px; padding: 10px; margin-bottom: 15px; }
+            .chart-header { font-size: 0.85rem; margin-bottom: 5px; }
+            
+            /* 解除手機版紫色區塊的強制過寬，避免擠壓橘色字體 */
+            .lever-part { min-width: 65px; } 
+            .part { font-size: 0.75rem; }
+            
+            .btn-fetch { padding: 15px; font-size: 1.1rem; margin-bottom: 15px; }
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <h2>📊 綜合退休戰情室 <span id="eye-icon" class="privacy-toggle" onclick="togglePrivacy()">👁️</span></h2>
+    <h2><span class="title-text">📊 綜合退休戰情室</span> <span id="eye-icon" class="privacy-toggle" onclick="togglePrivacy()">👁️</span></h2>
     
     <div id="summary-grid" class="summary-grid">
         <div class="summary-card"><span>💵 USD/TWD 匯率</span><br><b id="usd-twd-val" style="color:var(--orange)">加載中...</b></div>
@@ -62,7 +82,10 @@
     </div>
 
     <div id="chart-wrapper" class="chart-container">
-        <canvas id="historyChart"></canvas>
+        <div class="chart-header">📈 歷史淨值曲線圖</div>
+        <div class="canvas-wrapper">
+            <canvas id="historyChart"></canvas>
+        </div>
     </div>
 
     <div class="table-wrapper">
@@ -119,13 +142,13 @@
     let displayStocks = JSON.parse(localStorage.getItem('displayStocks')) || initialStocks;
     let currentPrices = {};
     let isPrivate = localStorage.getItem('privacy_v27') === 'true';
-    let equityChart = null; // 圖表實例
+    let equityChart = null;
 
     window.onload = () => { 
         updateEyeUI(); 
         renderTable(); 
         calculate(); 
-        fetchUSD(); // 載入時獨立抓取匯率
+        fetchUSD(); 
     };
 
     function togglePrivacy() { 
@@ -137,7 +160,6 @@
 
     function updateEyeUI() { 
         document.getElementById('eye-icon').innerText = isPrivate ? '🙈' : '👁️'; 
-        // 圖表與數字遮蔽連動
         document.getElementById('chart-wrapper').className = isPrivate ? 'chart-container privacy-mask' : 'chart-container';
     }
 
@@ -163,14 +185,12 @@
         document.getElementById('list').innerHTML = html;
     }
 
-    // 獨立抓取匯率 API (TWD=X)
     async function fetchUSD() {
         try {
             const res = await fetch(`${API_URL}?symbol=TWD=X&cache=${Date.now()}`);
             const data = await res.json();
             if(data.price) {
                 let diff = data.price - (data.prevClose || data.price);
-                // 美元升值(台幣貶值)對持有美股底層資產是好事，通常標綠色；反之紅色。這邊以直觀數字漲跌為準：升值紅、貶值綠
                 let color = diff >= 0 ? 'var(--red)' : 'var(--green)'; 
                 let sign = diff >= 0 ? '+' : '';
                 document.getElementById('usd-twd-val').innerHTML = `${data.price.toFixed(3)} <span style="font-size:0.9rem; color:${color}">(${sign}${diff.toFixed(3)})</span>`;
@@ -182,8 +202,8 @@
 
     async function fetchAll() {
         const btn = document.getElementById('btn-f');
-        btn.disabled = true; btn.innerHTML = "📡 同步中...";
-        fetchUSD(); // 點擊時一併更新匯率
+        btn.disabled = true; btn.innerHTML = "📡 同步中，請稍候...";
+        fetchUSD(); 
         for (let s of displayStocks) {
             try {
                 const res = await fetch(`${API_URL}?symbol=${s.sym}&cache=${Date.now()}`);
@@ -196,23 +216,20 @@
         calculate();
     }
 
-    // 繪製或更新圖表
     function drawChart(historyData) {
         const ctx = document.getElementById('historyChart').getContext('2d');
-        const labels = Object.keys(historyData).sort(); // 取出日期排序
-        const data = labels.map(k => historyData[k]); // 取出對應數值
-
-        // 只取日期中的 MM-DD
+        const labels = Object.keys(historyData).sort(); 
+        const data = labels.map(k => historyData[k]); 
         const shortLabels = labels.map(date => date.substring(5)); 
 
-        if (equityChart) equityChart.destroy(); // 銷毀舊圖重畫
+        if (equityChart) equityChart.destroy(); 
 
         equityChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: shortLabels,
                 datasets: [{
-                    label: '資產總市值 (TWD)',
+                    label: '資產總市值',
                     data: data,
                     borderColor: '#00d4ff',
                     backgroundColor: 'rgba(0, 212, 255, 0.1)',
@@ -279,7 +296,6 @@
 
         const pl = tVal - tCost, pPct = tCost > 0 ? (pl / tCost * 100).toFixed(2) : 0;
         
-        // 更新頂部卡片
         document.getElementById('sum-val').innerText = Math.round(tVal).toLocaleString();
         document.getElementById('sum-val').className = isPrivate ? 'privacy-mask' : '';
         document.getElementById('sum-change').innerHTML = `<span style="color:${tDayChange>=0?'var(--green)':'var(--red)'}">${tDayChange>=0?'+':''}${Math.round(tDayChange).toLocaleString()}</span>`;
@@ -289,14 +305,12 @@
         document.getElementById('sum-pl-card').style.border = `1px solid ${pl>=0?'var(--green)':'var(--red)'}`;
         document.getElementById('sum-dd').innerText = tDrawdown.toFixed(2) + "%";
 
-        // 更新提領
         const ann = tVal * swrRate;
         document.getElementById('annual-withdraw').innerText = "NT$ " + Math.round(ann).toLocaleString();
         document.getElementById('monthly-withdraw').innerText = "NT$ " + Math.round(ann/12).toLocaleString();
         document.getElementById('annual-withdraw').className = isPrivate ? 'privacy-mask' : '';
         document.getElementById('monthly-withdraw').className = isPrivate ? 'privacy-mask' : '';
 
-        // 更新比例條
         if (tVal > 0) {
             const sp = (sVal/tVal*100).toFixed(1), lp = (lVal/tVal*100).toFixed(1), bp = (bVal/tVal*100).toFixed(1);
             const sb = document.getElementById('stock-bar'), lb = document.getElementById('lever-bar'), bb = document.getElementById('bond-bar');
@@ -305,24 +319,16 @@
             bb.style.width = bp+'%'; bb.innerText = `債券 ${bp}%`;
         }
 
-        // 處理歷史數據與繪圖
         if (tVal > 0) {
-            let todayDate = new Date().toISOString().split('T')[0]; // "2026-03-17"
+            let todayDate = new Date().toISOString().split('T')[0]; 
             let historyData = JSON.parse(localStorage.getItem('equityHistory')) || {};
-            
-            // 巧思：如果紀錄是空的，利用今天的「變動額」反推並模擬出昨天的數據，讓圖表立刻有線條！
             if (Object.keys(historyData).length === 0) {
                 let yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
                 historyData[yesterday] = Math.round(tVal - tDayChange);
             }
-            
-            // 寫入今日最新市值
             historyData[todayDate] = Math.round(tVal);
-            
-            // 如果超過 30 天，刪除最舊的數據保持清爽
             let keys = Object.keys(historyData).sort();
             if (keys.length > 30) delete historyData[keys[0]];
-            
             localStorage.setItem('equityHistory', JSON.stringify(historyData));
             drawChart(historyData);
         }
