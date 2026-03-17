@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>綜合資產戰情室 V22.0</title>
+    <title>綜合資產戰情室 V22.2</title>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; }
         body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
@@ -23,7 +23,7 @@
         .btn-fetch { background: linear-gradient(135deg, #007acc, #00d4ff); color: white; }
         .profit { color: var(--green); font-weight: bold; }
         .loss { color: var(--red); font-weight: bold; }
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .summary-card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 15px; border: 1px solid #444; text-align: center; }
         .summary-card b { font-size: 1.4rem; display: block; margin-top: 5px; }
         .allocation-box { width: 100%; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 15px; border: 1px solid #333; display: flex; flex-direction: column; align-items: center; }
@@ -36,7 +36,7 @@
 </head>
 <body>
 <div class="container">
-    <h2>📊 綜合資產戰情室 <small style="font-size: 12px; color:#666;">V22.0 排序與績效強化版</small></h2>
+    <h2>📊 綜合資產戰情室 <small style="font-size: 12px; color:#666;">V22.2 終極穩定版</small></h2>
     <div class="table-wrapper">
         <table>
             <thead>
@@ -79,7 +79,9 @@
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwQDoFGzE10nunz5Ib3VqJ86_YX-yYQxzBeEjYg_vg2Y87FQlucug-nsTxb5y3GaFm8Mw/exec";
+    // 已更新為您剛才提供的最新 API 網址
+    const API_URL = "https://script.google.com/macros/s/AKfycbyVqkIKdI1gC50Nd5MKNYGuSjN5flQF7q2E8_BRkFKhHjs3A7JkQrr_BjgnVK0qa8P0dg/exec";
+
     const initialStocks = [
         { id: "00662", sym: "00662.TW", name: "富邦NASDAQ", exp: 12 },
         { id: "00670L", sym: "00670L.TW", name: "富邦NASDAQ正2", exp: 20 },
@@ -123,12 +125,13 @@
             const sh = localStorage.getItem('sh_'+s.id) || "0";
             const co = localStorage.getItem('co_'+s.id) || "0";
             const pD = currentPrices[s.id] || { price: 0 };
+            const dispPrice = pD.price > 0 ? pD.price : "...";
             html += `<tr>
                 <td><span class="move-btn" onclick="moveRow(${index}, -1)">▲</span><span class="move-btn" onclick="moveRow(${index}, 1)">▼</span></td>
                 <td><span class="stock-id">${s.id}</span><span class="stock-name">${s.name}</span></td>
                 <td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td>
                 <td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td>
-                <td id="cost_${s.id}">-</td><td id="mkt_${s.id}">-</td><td id="price_${s.id}">${pD.price || '...'}</td>
+                <td id="cost_${s.id}">-</td><td id="mkt_${s.id}">-</td><td id="price_${s.id}">${dispPrice}</td>
                 <td id="pl_${s.id}">-</td><td id="roi_${s.id}">-</td><td id="dd_${s.id}">-</td><td id="ytd_${s.id}">-</td><td id="rat_${s.id}">-</td>
             </tr>`;
         });
@@ -145,15 +148,11 @@
                 const res = await fetch(`${API_URL}?symbol=${s.sym}&cache=${Date.now()}`);
                 const data = await res.json();
                 if(data.price) {
-                    currentPrices[s.id] = { 
-                        price: data.price, high: data.high, 
-                        prevClose: data.prevClose || data.price, 
-                        ytdOpen: data.ytdOpen || 0 
-                    };
+                    currentPrices[s.id] = data;
                 }
             } catch (e) { console.error(e); }
         }
-        btn.innerHTML = "✅ 同步完成"; calculate();
+        btn.innerHTML = "✅ 同步完成"; renderTable();
         setTimeout(() => { btn.innerHTML = "🚀 同步即時數據"; btn.disabled = false; }, 2000);
     }
 
@@ -180,8 +179,6 @@
                 const pl = (pD.price - co) * sh;
                 const roi = ((pD.price - co) / co * 100).toFixed(2);
                 const dd = pD.high > 0 ? ((pD.price - pD.high) / pD.high * 100).toFixed(2) : "0.00";
-                
-                // YTD 邏輯：若 API ytdOpen 沒給，暫時不顯示或設為 0
                 const ytd = (pD.ytdOpen && pD.ytdOpen > 0) ? ((pD.price - pD.ytdOpen) / pD.ytdOpen * 100).toFixed(2) : "0.00";
                 
                 const rat = (mkt / tVal * 100).toFixed(1);
@@ -198,8 +195,7 @@
             }
         });
 
-        const tPL = tVal - tCost;
-        const tROI = tCost > 0 ? (tPL / tCost * 100).toFixed(2) : 0;
+        const tPL = tVal - tCost, tROI = tCost > 0 ? (tPL / tCost * 100).toFixed(2) : 0;
         document.getElementById('summary-grid').innerHTML = `
             <div class="summary-card"><span>總市值</span><br><b style="color:var(--blue)">${Math.round(tVal).toLocaleString()}</b></div>
             <div class="summary-card"><span>今日變動</span><br><b style="color:${tDayChange>=0?'var(--green)':'var(--red)'}">${tDayChange>=0?'+':''}${Math.round(tDayChange).toLocaleString()}</b></div>
@@ -215,7 +211,6 @@
         }
     }
 
-    // --- 強化版排序功能 ---
     function sortTable(type) {
         sortDir = !sortDir;
         displayStocks.sort((a, b) => {
@@ -224,11 +219,9 @@
                 const co = Number(localStorage.getItem('co_'+s.id)) || 0;
                 const pD = currentPrices[s.id];
                 if (!pD || pD.price <= 0) return -999999999;
-
                 if (type === 'cost') return sh * co;
                 if (type === 'market') return sh * pD.price;
                 if (type === 'pl') return (pD.price - co) * sh;
-                if (type === 'roi') return co > 0 ? (pD.price - co) / co : -1;
                 if (type === 'ratio') return sh * pD.price;
                 if (type === 'ytd') return (pD.ytdOpen > 0) ? (pD.price - pD.ytdOpen) / pD.ytdOpen : -1;
                 return pD.price;
@@ -239,4 +232,4 @@
     }
 </script>
 </body>
-</html>    <styl
+</html>
