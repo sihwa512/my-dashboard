@@ -3,186 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>綜合資產戰情室 V12.0</title>
+    <title>綜合資產戰情室 V17.1</title>
     <style>
-        :root { --bg: #121420; --card: #1b1e2e; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; }
-        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 1000px; background: var(--card); padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }
-        h2 { text-align: center; color: var(--green); margin-bottom: 25px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .table-wrapper { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th { background: rgba(255,255,255,0.05); color: var(--blue); padding: 15px 10px; text-align: center; font-size: 0.85rem; border-bottom: 2px solid #333; cursor: pointer; transition: 0.3s; }
-        th:hover { background: rgba(0,212,255,0.1); }
-        td { padding: 15px 10px; border-bottom: 1px solid #2d303e; text-align: center; }
+        :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; }
+        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 1250px; background: var(--card); padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }
+        h2 { text-align: center; color: var(--green); margin-bottom: 25px; font-weight: 700; }
+        .table-wrapper { width: 100%; overflow-x: auto; max-height: 70vh; border-radius: 10px; border: 1px solid #2d303e; }
+        table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+        thead th { position: sticky; top: 0; z-index: 10; background: #1b1e2e; color: var(--blue); padding: 15px 5px; text-align: center; font-size: 0.85rem; border-bottom: 2px solid var(--blue); }
+        td { padding: 12px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.95rem; }
+        .move-btn { cursor: pointer; color: #555; font-size: 1.2rem; user-select: none; padding: 0 5px; transition: 0.2s; display: inline-block; width: 25px; }
+        .move-btn:hover { color: var(--blue); }
         .stock-id { font-weight: bold; color: #fff; display: block; }
-        .stock-name { font-size: 0.75rem; color: #888; }
-        input { background: #252836; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 8px; width: 85px; text-align: center; outline: none; transition: 0.3s; }
-        input:focus { border-color: var(--blue); box-shadow: 0 0 8px rgba(0,212,255,0.3); }
-        .btn-group { display: flex; gap: 15px; justify-content: center; margin-top: 25px; }
+        .stock-name { font-size: 0.75rem; color: #888; display: block; }
+        input { background: #252836; border: 1px solid #444; color: #fff; padding: 6px; border-radius: 6px; width: 80px; text-align: center; outline: none; }
+        .val-text { color: #aaa; font-size: 0.9rem; }
+        .btn-group { display: flex; gap: 15px; justify-content: center; margin: 25px 0; }
         button { padding: 12px 25px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 1rem; }
-        .btn-fetch { background: linear-gradient(135deg, #007acc, #00d4ff); color: white; box-shadow: 0 4px 15px rgba(0,122,204,0.4); }
+        .btn-fetch { background: linear-gradient(135deg, #007acc, #00d4ff); color: white; box-shadow: 0 4px 15px rgba(0,122,204,0.3); }
         .profit { color: var(--green); font-weight: bold; }
         .loss { color: var(--red); font-weight: bold; }
-        .summary { margin-top: 25px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 15px; text-align: center; border: 1px dashed #444; line-height: 1.8; }
-        .sort-icon { font-size: 0.7rem; margin-left: 3px; opacity: 0.5; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-top: 10px; }
+        .summary-card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 15px; border: 1px solid #444; text-align: center; }
+        .summary-card b { font-size: 1.4rem; display: block; margin-top: 5px; }
+        .pct-bar-bg { width: 100%; height: 6px; background: #222; border-radius: 3px; margin-top: 5px; overflow: hidden; }
+        .pct-bar-fill { height: 100%; background: var(--blue); transition: 0.5s; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>📊 綜合資產戰情室 <small style="font-size: 12px; color:#666;">V12.0 排序版</small></h2>
-    
+    <h2>📊 綜合資產戰情室 <small style="font-size: 12px; color:#666;">V17.1 台股專精版</small></h2>
     <div class="table-wrapper">
         <table>
             <thead>
                 <tr>
-                    <th>標的</th>
+                    <th style="width: 80px;">排序</th>
+                    <th>標的代號</th>
                     <th>持有股數</th>
                     <th>平均成本</th>
-                    <th onclick="sortTable('price')">最新股價 <span class="sort-icon">⇅</span></th>
-                    <th onclick="sortTable('pl')">未實現損益 <span class="sort-icon">⇅</span></th>
-                    <th onclick="sortTable('roi')">報酬率 <span class="sort-icon">⇅</span></th>
-                    <th>52W高點</th>
-                    <th onclick="sortTable('dd')">高點回撤 <span class="sort-icon">⇅</span></th>
+                    <th onclick="sortTable('cost')">投資成本 ⇅</th>
+                    <th onclick="sortTable('market')">資產市值 ⇅</th>
+                    <th onclick="sortTable('price')">最新股價 ⇅</th>
+                    <th onclick="sortTable('pl')">損益 ⇅</th>
+                    <th onclick="sortTable('roi')">報酬率 ⇅</th>
+                    <th onclick="sortTable('dd')">回撤 ⇅</th>
+                    <th onclick="sortTable('ratio')">佔比 ⇅</th>
                 </tr>
             </thead>
             <tbody id="list"></tbody>
         </table>
     </div>
-
     <div class="btn-group">
         <button class="btn-fetch" onclick="fetchAll()" id="btn-f">🚀 同步即時數據</button>
     </div>
-
-    <div class="summary" id="summary">請輸入數據並同步。</div>
+    <div class="summary-grid" id="summary-grid"></div>
 </div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwQDoFGzE10nunz5Ib3VqJ86_YX-yYQxzBeEjYg_vg2Y87FQlucug-nsTxb5y3GaFm8Mw/exec";
-
-    let stocks = [
-        { id: "00662", sym: "00662.TW", name: "富邦NASDAQ" },
-        { id: "00670L", sym: "00670L.TW", name: "富邦NASDAQ正2" },
-        { id: "00865B", sym: "00865B.TW", name: "國泰美債0-1年" },
-        { id: "0050", sym: "0050.TW", name: "元大台灣50" },
-        { id: "006208", sym: "006208.TW", name: "富邦台50" },
-        { id: "00631L", sym: "00631L.TW", name: "元大台灣50正2" },
-        { id: "00663L", sym: "00663L.TW", name: "國泰台灣加權正2" },
-        { id: "00675L", sym: "00675L.TW", name: "富邦臺灣加權正2" },
-        { id: "2330", sym: "2330.TW", name: "台積電" }
+    const initialStocks = [
+        { id: "00662", sym: "00662.TW", name: "富邦NASDAQ", exp: 12 },
+        { id: "00670L", sym: "00670L.TW", name: "富邦NASDAQ正2", exp: 20 },
+        { id: "00865B", sym: "00865B.TW", name: "國泰美債0-1年", exp: 4 },
+        { id: "0050", sym: "0050.TW", name: "元大台灣50", exp: 10 },
+        { id: "006208", sym: "006208.TW", name: "富邦台50", exp: 10 },
+        { id: "0056", sym: "0056.TW", name: "元大高股息", exp: 7 },
+        { id: "00631L", sym: "00631L.TW", name: "元大台灣50正2", exp: 18 },
+        { id: "00663L", sym: "00663L.TW", name: "國泰台灣加權正2", exp: 18 },
+        { id: "00675L", sym: "00675L.TW", name: "富邦臺灣加權正2", exp: 18 },
+        { id: "2330", sym: "2330.TW", name: "台積電", exp: 15 }
     ];
-
-    let sortDir = true;
-    let currentPrices = {}; // 暫存抓到的價格與高點
-
+    let displayStocks = JSON.parse(localStorage.getItem('displayStocks')) || initialStocks;
+    let sortDir = true, currentPrices = {};
     window.onload = () => { renderTable(); calculate(); };
-
+    function moveRow(index, direction) {
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= displayStocks.length) return;
+        const temp = displayStocks[index];
+        displayStocks[index] = displayStocks[newIndex];
+        displayStocks[newIndex] = temp;
+        localStorage.setItem('displayStocks', JSON.stringify(displayStocks));
+        renderTable();
+    }
     function save(id) {
         localStorage.setItem('sh_'+id, document.getElementById('sh_'+id).value);
         localStorage.setItem('co_'+id, document.getElementById('co_'+id).value);
         calculate();
     }
-
     function renderTable() {
         let html = "";
-        stocks.forEach(s => {
-            const sh = localStorage.getItem('sh_'+s.id) || "";
-            const co = localStorage.getItem('co_'+s.id) || "";
-            const priceData = currentPrices[s.id] || { price: 0, high: 0 };
-            
-            html += `<tr>
-                <td><span class="stock-id">${s.id}</span><span class="stock-name">${s.name}</span></td>
-                <td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td>
-                <td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td>
-                <td id="pr_${s.id}">${priceData.price || '...'}</td>
-                <td id="pl_${s.id}">-</td>
-                <td id="roi_${s.id}">-</td>
-                <td id="hi_${s.id}" style="color:#777">${priceData.high || '-'}</td>
-                <td id="dd_${s.id}">-</td>
-            </tr>`;
+        displayStocks.forEach((s, index) => {
+            const sh = localStorage.getItem('sh_'+s.id) || "", co = localStorage.getItem('co_'+s.id) || "";
+            const pD = currentPrices[s.id] || { price: 0 };
+            html += `<tr><td><div class="move-btn" onclick="moveRow(${index}, -1)">▲</div><div class="move-btn" onclick="moveRow(${index}, 1)">▼</div></td><td><span class="stock-id">${s.id}</span><span class="stock-name">${s.name}</span></td><td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td><td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td><td id="cost_${s.id}" class="val-text">-</td><td id="mkt_${s.id}" class="val-text">-</td><td>${pD.price || '...'}</td><td id="pl_${s.id}">-</td><td id="roi_${s.id}">-</td><td id="dd_${s.id}">-</td><td id="rat_${s.id}">-</td></tr>`;
         });
         document.getElementById('list').innerHTML = html;
         if(Object.keys(currentPrices).length > 0) calculate();
     }
-
     async function fetchAll() {
         const btn = document.getElementById('btn-f');
         btn.disabled = true;
-        for (let s of stocks) {
-            btn.innerHTML = `正在抓取 ${s.id}...`;
+        for (let s of displayStocks) {
+            btn.innerHTML = `抓取 ${s.id}...`;
             try {
                 const res = await fetch(`${API_URL}?symbol=${s.sym}&cache=${Date.now()}`);
                 const data = await res.json();
-                if(data.price) {
-                    currentPrices[s.id] = { price: data.price, high: data.high };
-                }
+                if(data.price) currentPrices[s.id] = { price: data.price, high: data.high, prevClose: data.prevClose || data.previousClose || data.price };
             } catch (e) { console.error(e); }
         }
         btn.innerHTML = "✅ 同步完成";
         renderTable(); 
         setTimeout(() => { btn.innerHTML = "🚀 同步即時數據"; btn.disabled = false; }, 2000);
     }
-
     function calculate() {
-        let tCost = 0, tVal = 0;
-        stocks.forEach(s => {
-            const sh = Number(localStorage.getItem('sh_'+s.id));
-            const co = Number(localStorage.getItem('co_'+s.id));
-            const pr = currentPrices[s.id]?.price || 0;
-            const hi = currentPrices[s.id]?.high || 0;
-
+        let tCost = 0, tVal = 0, tDayChange = 0, weightedExp = 0;
+        displayStocks.forEach(s => {
+            const sh = Number(localStorage.getItem('sh_'+s.id)), co = Number(localStorage.getItem('co_'+s.id)), pr = currentPrices[s.id]?.price || 0, pc = currentPrices[s.id]?.prevClose || 0;
+            if (sh > 0 && pr > 0) { tCost += (sh * co); tVal += (sh * pr); if (pc > 0) tDayChange += (pr - pc) * sh; }
+        });
+        displayStocks.forEach(s => {
+            const sh = Number(localStorage.getItem('sh_'+s.id)), co = Number(localStorage.getItem('co_'+s.id)), pr = currentPrices[s.id]?.price || 0;
+            let hi = currentPrices[s.id]?.high || 0; if (hi > pr * 4) hi = pr;
+            const mktValue = sh * pr;
+            const rat = tVal > 0 ? (mktValue / tVal * 100).toFixed(1) : 0;
+            weightedExp += (mktValue / tVal) * (s.exp || 0);
             if (sh > 0 && pr > 0) {
-                const pl = (pr - co) * sh;
-                const roi = ((pr - co) / co * 100).toFixed(2);
-                const dd = ((pr - hi) / hi * 100).toFixed(2);
-                tCost += (sh * co); tVal += (sh * pr);
-
-                // 更新表格內的顏色與數值
+                const pl = (pr - co) * sh, roi = ((pr - co) / co * 100).toFixed(2), dd = hi > 0 ? ((pr - hi) / hi * 100).toFixed(2) : "0.00";
+                document.getElementById('cost_'+s.id).innerText = Math.round(sh * co).toLocaleString();
+                document.getElementById('mkt_'+s.id).innerText = Math.round(mktValue).toLocaleString();
                 document.getElementById('pl_'+s.id).innerHTML = `<span class="${pl>=0?'profit':'loss'}">${Math.round(pl).toLocaleString()}</span>`;
                 document.getElementById('roi_'+s.id).innerHTML = `<span class="${pl>=0?'profit':'loss'}">${roi}%</span>`;
-                document.getElementById('dd_'+s.id).innerHTML = `<span style="color:orange; font-weight:bold;">${dd}%</span>`;
+                document.getElementById('dd_'+s.id).innerHTML = `<span style="color:var(--orange)">${dd}%</span>`;
+                document.getElementById('rat_'+s.id).innerHTML = `<span style="font-size:0.85rem">${rat}%</span><div class="pct-bar-bg"><div class="pct-bar-fill" style="width:${rat}%"></div></div>`;
             }
         });
-
-        // --- 這裡就是新增的「總計顏色提醒」視覺強化區塊 ---
-        const tPL = tVal - tCost;
-        const tROI = tCost > 0 ? (tPL / tCost * 100).toFixed(2) : 0;
-        
-        document.getElementById('summary').innerHTML = `
-            <div style="display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:20px; padding:10px;">
-                <div style="text-align:center;">
-                    <span style="color:#888; font-size:0.9rem;">總投入本金</span><br>
-                    <b style="font-size:1.5rem; color:#fff;">${Math.round(tCost).toLocaleString()}</b>
-                </div>
-                <div style="text-align:center;">
-                    <span style="color:#888; font-size:0.9rem;">目前總現值</span><br>
-                    <b style="font-size:1.5rem; color:var(--blue);">${Math.round(tVal).toLocaleString()}</b>
-                </div>
-                <div style="text-align:center; padding:10px 20px; background:rgba(255,255,255,0.05); border-radius:12px; border:1px solid ${tPL>=0?'var(--green)':'var(--red)'};">
-                    <span style="color:#888; font-size:0.9rem;">總未實現損益</span><br>
-                    <b style="font-size:1.5rem; color:${tPL>=0?'var(--green)':'var(--red)'};">
-                        ${tPL>=0?'+':''}${Math.round(tPL).toLocaleString()} (${tROI}%)
-                    </b>
-                </div>
-            </div>
-        `;
+        const tPL = tVal - tCost, tROI = tCost > 0 ? (tPL / tCost * 100).toFixed(2) : 0;
+        document.getElementById('summary-grid').innerHTML = `<div class="summary-card"><span>目前總市值</span><br><b style="color:var(--blue)">${Math.round(tVal).toLocaleString()}</b></div><div class="summary-card"><span>今日資產變動</span><br><b style="color:${tDayChange>=0?'var(--green)':'var(--red)'}">${tDayChange>=0?'+':''}${Math.round(tDayChange).toLocaleString()}</b></div><div class="summary-card" style="border:2px solid ${tPL>=0?'var(--green)':'var(--red)'}"><span>總累計損益</span><br><b style="color:${tPL>=0?'var(--green)':'var(--red)'}">${tPL>=0?'+':''}${Math.round(tPL).toLocaleString()} (${tROI}%)</b></div><div class="summary-card" style="border:1px solid var(--purple)"><span>預計年化報酬率</span><br><b style="color:var(--purple)">${weightedExp.toFixed(2)}%</b></div>`;
     }
-
     function sortTable(type) {
         sortDir = !sortDir;
-        stocks.sort((a, b) => {
-            let valA = 0, valB = 0;
-            const shA = Number(localStorage.getItem('sh_'+a.id)), coA = Number(localStorage.getItem('co_'+a.id));
-            const shB = Number(localStorage.getItem('sh_'+b.id)), coB = Number(localStorage.getItem('co_'+b.id));
-            const prA = currentPrices[a.id]?.price || 0, hiA = currentPrices[a.id]?.high || 0;
-            const prB = currentPrices[b.id]?.price || 0, hiB = currentPrices[b.id]?.high || 0;
-
-            if(type === 'price') { valA = prA; valB = prB; }
-            else if(type === 'pl') { valA = (prA - coA) * shA; valB = (prB - coB) * shB; }
-            else if(type === 'roi') { valA = coA > 0 ? (prA - coA) / coA : -999; valB = coB > 0 ? (prB - coB) / coB : -999; }
-            else if(type === 'dd') { valA = hiA > 0 ? (prA - hiA) / hiA : 0; valB = hiB > 0 ? (prB - hiB) / hiB : 0; }
-
-            return sortDir ? valA - valB : valB - valA;
+        displayStocks.sort((a, b) => {
+            let vA = 0, vB = 0;
+            const shA = Number(localStorage.getItem('sh_'+a.id)), prA = currentPrices[a.id]?.price || 0, coA = Number(localStorage.getItem('co_'+a.id));
+            const shB = Number(localStorage.getItem('sh_'+b.id)), prB = currentPrices[b.id]?.price || 0, coB = Number(localStorage.getItem('co_'+b.id));
+            if(type === 'price') vA = prA, vB = prB;
+            else if(type === 'cost') vA = shA * coA, vB = shB * coB;
+            else if(type === 'market') vA = shA * prA, vB = shB * prB;
+            else if(type === 'pl') vA = (prA - coA) * shA, vB = (prB - coB) * shB;
+            else if(type === 'roi') vA = coA > 0 ? (prA - coA) / coA : -99, vB = coB > 0 ? (prB - coB) / coB : -99;
+            else if(type === 'dd') {
+                let hA = (currentPrices[a.id]?.high > prA * 4) ? prA : (currentPrices[a.id]?.high || prA);
+                let hB = (currentPrices[b.id]?.high > prB * 4) ? prB : (currentPrices[b.id]?.high || prB);
+                vA = (prA - hA) / hA, vB = (prB - hB) / hB;
+            }
+            else if(type === 'ratio') vA = shA * prA, vB = shB * prB;
+            return sortDir ? vA - vB : vB - vA;
         });
         renderTable();
     }
