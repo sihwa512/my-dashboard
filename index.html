@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>退休資產戰情室 V23.2</title>
+    <title>退休資產戰情室 V24.0</title>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; }
         body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
@@ -19,6 +19,10 @@
         thead th { position: sticky; top: 0; background: #1b1e2e; color: var(--blue); padding: 12px 5px; text-align: center; font-size: 0.8rem; border-bottom: 2px solid var(--blue); }
         td { padding: 12px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.9rem; }
         input { background: #252836; border: 1px solid #444; color: #fff; padding: 6px; border-radius: 6px; width: 85px; text-align: center; }
+        
+        /* 鎖定債券輸入框的樣式 */
+        .input-readonly { background: #1a1c23; color: #888; cursor: not-allowed; border: 1px solid #333; }
+        
         .privacy-mask { filter: blur(8px); transition: 0.3s; }
         .tools-section { display: grid; grid-template-columns: 1fr 1.5fr; gap: 15px; margin-top: 10px; }
         .tool-box { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 15px; border: 1px solid #333; }
@@ -65,9 +69,9 @@
         <div class="tool-box">
             <span class="tool-title">⚖️ 目標配置再平衡 (Target %)</span>
             <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <div><small style="color:var(--blue)">●股票</small><br><input type="number" id="target-s" value="60" oninput="calculate()"></div>
-                <div><small style="color:var(--purple)">●正2</small><br><input type="number" id="target-l" value="10" oninput="calculate()"></div>
-                <div><small style="color:var(--orange)">●債券</small><br><input type="number" id="target-b" value="30" oninput="calculate()"></div>
+                <div><small style="color:var(--blue)">●股票</small><br><input type="number" id="target-s" value="60" oninput="updateTargets()"></div>
+                <div><small style="color:var(--purple)">●正2</small><br><input type="number" id="target-l" value="10" oninput="updateTargets()"></div>
+                <div><small style="color:var(--orange)">●債券 (自動防呆)</small><br><input type="number" id="target-b" value="30" class="input-readonly" readonly></div>
             </div>
             <div class="ratio-bar-container">
                 <div id="stock-bar" class="part stock-part" style="width: 0%;"></div>
@@ -92,7 +96,6 @@
 </div>
 
 <script>
-    // 已自動更新為您提供的最新網址
     const API_URL = "https://script.google.com/macros/s/AKfycbyVqkIKdI1gC50Nd5MKNYGuSjN5flQF7q2E8_BRkFKhHjs3A7JkQrr_BjgnVK0qa8P0dg/exec";
     
     const initialStocks = [
@@ -123,6 +126,21 @@
     function save(id) {
         localStorage.setItem('sh_'+id, document.getElementById('sh_'+id).value);
         localStorage.setItem('co_'+id, document.getElementById('co_'+id).value);
+        calculate();
+    }
+
+    // 自動計算債券比例
+    function updateTargets() {
+        let s = Number(document.getElementById('target-s').value) || 0;
+        let l = Number(document.getElementById('target-l').value) || 0;
+        let b = 100 - s - l;
+        
+        const bondInput = document.getElementById('target-b');
+        bondInput.value = b;
+        
+        // 如果股票+正2超過100%，債券會變負數，給予紅色警示
+        bondInput.style.color = b < 0 ? "var(--red)" : "#888";
+        
         calculate();
     }
 
@@ -183,7 +201,6 @@
             }
         });
 
-        // 算出類別差額
         const diffS = (tVal * targetS) - sVal;
         const diffL = (tVal * targetL) - lVal;
         const diffB = (tVal * targetB) - bVal;
@@ -196,7 +213,11 @@
             
             if (sh > 0 && pD && pD.price > 0) {
                 const mkt = sh * pD.price; tCost += (sh * co);
-                if(pD.prevClose > 0) tDayChange += (pD.price - pD.prevClose) * sh;
+                
+                // 強制轉換數值，確保今日變動能算出來
+                let prev = Number(pD.prevClose);
+                if (!prev || prev <= 0) prev = pD.price; // 如果 API 異常沒給昨收，暫時當作平盤處理防止 NaN
+                tDayChange += (pD.price - prev) * sh;
                 
                 const pl = (pD.price - co) * sh;
                 const roi = ((pD.price - co) / co * 100).toFixed(2);
@@ -240,9 +261,10 @@
 
         if (tVal > 0) {
             const sp = (sVal/tVal*100).toFixed(1), lp = (lVal/tVal*100).toFixed(1), bp = (bVal/tVal*100).toFixed(1);
-            document.getElementById('stock-bar').style.width = sp+'%'; document.getElementById('stock-bar').innerText = sp > 5 ? `股票 ${sp}%` : '';
-            document.getElementById('lever-bar').style.width = lp+'%'; document.getElementById('lever-bar').innerText = lp > 5 ? `正2 ${lp}%` : '';
-            document.getElementById('bond-bar').style.width = bp+'%'; document.getElementById('bond-bar').innerText = bp > 5 ? `債券 ${bp}%` : '';
+            const sb = document.getElementById('stock-bar'), lb = document.getElementById('lever-bar'), bb = document.getElementById('bond-bar');
+            sb.style.width = sp+'%'; sb.innerText = sp > 5 ? `股票 ${sp}%` : '';
+            lb.style.width = lp+'%'; lb.innerText = lp > 5 ? `正2 ${lp}%` : '';
+            bb.style.width = bp+'%'; bb.innerText = bp > 5 ? `債券 ${bp}%` : '';
         }
     }
 </script>
