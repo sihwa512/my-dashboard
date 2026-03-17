@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V32.0</title>
+    <title>退休資產戰情室 V33.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
         body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 12px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 1300px; background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 1px solid #333; box-sizing: border-box; overflow: hidden; }
         
-        /* 標題與右上角工具列排版 */
         .header-container { display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 25px; width: 100%; height: 40px; }
         h2 { margin: 0; color: var(--green); font-weight: 700; font-size: 1.5rem; white-space: nowrap; text-align: center; }
         .header-actions { position: absolute; right: 0; display: flex; gap: 8px; }
-        .icon-btn { cursor: pointer; font-size: 1.2rem; background: #2d303e; padding: 8px 12px; border-radius: 12px; border: 1px solid #555; transition: 0.2s; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; user-select: none; }
+        .icon-btn { cursor: pointer; font-size: 1.2rem; background: #2d303e; padding: 8px 12px; border-radius: 12px; border: 1px solid #555; transition: 0.2s; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
         .icon-btn:active { background: #444; transform: scale(0.9); }
 
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
@@ -22,7 +21,7 @@
         .summary-card span { font-size: 0.8rem; color: #888; letter-spacing: 1px; }
         .summary-card b { font-size: 1.4rem; display: block; margin-top: 8px; font-family: 'Consolas', monospace; }
         
-        .chart-container { width: 100%; height: 260px; background: rgba(0,0,0,0.2); border-radius: 15px; border: 1px solid var(--purple); box-shadow: 0 0 15px rgba(189, 147, 249, 0.05); padding: 15px; margin-bottom: 20px; box-sizing: border-box; transition: 0.3s; display: flex; flex-direction: column; }
+        .chart-container { width: 100%; height: 260px; background: rgba(0,0,0,0.2); border-radius: 15px; border: 1px solid var(--purple); box-shadow: 0 0 15px rgba(189, 147, 249, 0.05); padding: 15px; margin-bottom: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
         .chart-header { color: var(--purple); font-weight: bold; font-size: 0.95rem; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
         .canvas-wrapper { flex: 1; position: relative; width: 100%; }
 
@@ -31,13 +30,22 @@
         .btn-edit-pool { background: transparent; border: 1px solid var(--orange); color: var(--orange); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: bold; transition: 0.3s; display: flex; align-items: center; gap: 5px; }
         .btn-edit-pool.active { background: var(--orange); color: #000; box-shadow: 0 0 10px rgba(255, 159, 28, 0.4); }
 
+        /* 新增：自訂股票輸入區塊 */
+        .add-stock-bar { display: none; align-items: center; gap: 10px; background: #1b1e2e; padding: 12px; border-radius: 12px; border: 1px dashed var(--orange); margin-bottom: 15px; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        .add-input { background: #252836; border: 1px solid #555; color: #fff; padding: 8px 12px; border-radius: 8px; width: 120px; font-size: 1rem; text-transform: uppercase; outline: none; }
+        .add-input:focus { border-color: var(--orange); }
+        .btn-add { background: var(--orange); color: #000; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+        .btn-add:active { transform: scale(0.95); }
+        .btn-del { cursor: pointer; color: var(--red); font-size: 1rem; margin-right: 5px; background: rgba(255,68,68,0.1); border-radius: 4px; padding: 2px 5px; user-select: none; }
+
         .table-wrapper { width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid var(--slate); box-shadow: 0 0 15px rgba(98, 114, 164, 0.1); margin-bottom: 20px; background: #1b1e2e; }
         table { width: 100%; border-collapse: collapse; min-width: 1100px; }
         thead th { position: sticky; top: 0; background: #252836; color: var(--blue); padding: 15px 5px; text-align: center; font-size: 0.85rem; border-bottom: 2px solid var(--slate); cursor: pointer; }
         td { padding: 14px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.95rem; }
         
-        input { background: #252836; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 8px; width: 90px; text-align: center; font-size: 1rem; outline: none; }
-        input:focus { border-color: var(--orange); }
+        input[type="number"] { background: #252836; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 8px; width: 90px; text-align: center; font-size: 1rem; outline: none; }
+        input[type="number"]:focus { border-color: var(--orange); }
         .input-readonly { background: #1a1c23; color: #777; border: 1px solid #333; cursor: not-allowed; }
         .privacy-mask { filter: blur(12px); opacity: 0.15; pointer-events: none; transition: 0.3s; }
         .empty-state { color: #888; padding: 30px !important; font-size: 0.9rem; letter-spacing: 0.5px; }
@@ -54,7 +62,7 @@
 
         @media (max-width: 768px) {
             .container { padding: 12px; border-radius: 0; }
-            h2 { font-size: 1.15rem; margin-right: 120px; } /* 避免標題與右上角按鈕重疊 */
+            h2 { font-size: 1.15rem; margin-right: 120px; }
             .header-actions { gap: 5px; }
             .icon-btn { font-size: 1.05rem; padding: 6px 10px; }
             
@@ -65,6 +73,9 @@
             
             .chart-container { height: 200px; padding: 10px; margin-bottom: 15px; }
             .chart-header { font-size: 0.85rem; margin-bottom: 5px; }
+            
+            .add-stock-bar { flex-direction: column; align-items: stretch; }
+            .add-input { width: 100%; box-sizing: border-box; }
             
             .ratio-bar-container { height: 35px; }
             .part { font-size: 0.65rem; letter-spacing: -0.5px; }
@@ -113,6 +124,13 @@
     <div class="table-header-bar">
         <span class="table-title">📋 當前資產部位</span>
         <button id="edit-pool-btn" class="btn-edit-pool" onclick="toggleEditMode()">⚙️ 管理股票池</button>
+    </div>
+
+    <div id="add-stock-bar" class="add-stock-bar">
+        <span style="color:var(--orange); font-weight:bold; font-size:0.9rem;">➕ 新增自選標的：</span>
+        <input type="text" id="new-stock-id" class="add-input" placeholder="輸入代號 (例: 00878)" onkeypress="if(event.key === 'Enter') addNewStock()">
+        <button class="btn-add" onclick="addNewStock()">新增入池</button>
+        <span style="font-size:0.75rem; color:#888;">*若為台股會自動補上 .TW</span>
     </div>
 
     <div class="table-wrapper">
@@ -195,24 +213,17 @@
         } catch(e) { console.error(e); }
     };
 
-    // ----------------------------------------------------
-    // 【全新備份與還原系統】
-    // ----------------------------------------------------
     function exportData() {
         let backupData = {};
-        // 將 localStorage 中所有的資料統統打包
         for(let i=0; i<localStorage.length; i++) {
             let key = localStorage.key(i);
             backupData[key] = localStorage.getItem(key);
         }
-        
         let dataStr = JSON.stringify(backupData);
         let blob = new Blob([dataStr], { type: "application/json" });
         let url = URL.createObjectURL(blob);
         let a = document.createElement('a');
         a.href = url;
-        
-        // 檔名加上今天的日期，方便管理
         let date = new Date().toISOString().split('T')[0];
         a.download = `退休戰情室備份_${date}.json`;
         a.click();
@@ -222,28 +233,19 @@
     function importData(event) {
         let file = event.target.files[0];
         if(!file) return;
-        
         let reader = new FileReader();
         reader.onload = function(e) {
             try {
                 let importedData = JSON.parse(e.target.result);
-                // 清空現有設定，寫入備份檔內容
                 localStorage.clear();
-                for(let key in importedData) {
-                    localStorage.setItem(key, importedData[key]);
-                }
+                for(let key in importedData) { localStorage.setItem(key, importedData[key]); }
                 alert("✅ 資料還原成功！系統將為您重新載入畫面。");
-                location.reload(); // 重新整理網頁套用新設定
-            } catch(err) {
-                alert("❌ 還原失敗：檔案格式不正確，請確認這是一份正確的 JSON 備份檔。");
-            }
+                location.reload(); 
+            } catch(err) { alert("❌ 還原失敗：檔案格式不正確。"); }
         };
         reader.readAsText(file);
-        
-        // 清空 input，允許重複選取同一個檔案
         event.target.value = '';
     }
-    // ----------------------------------------------------
 
     function togglePrivacy() { isPrivate = !isPrivate; localStorage.setItem('privacy_v28', isPrivate); updateEyeUI(); calculate(); }
     function updateEyeUI() { document.getElementById('eye-icon').innerText = isPrivate ? '🙈' : '👁️'; document.getElementById('chart-wrapper').className = isPrivate ? 'chart-container privacy-mask' : 'chart-container'; }
@@ -251,15 +253,61 @@
     function toggleEditMode() {
         isEditMode = !isEditMode;
         const btn = document.getElementById('edit-pool-btn');
+        const addBar = document.getElementById('add-stock-bar');
         if (isEditMode) {
             btn.innerHTML = "✅ 完成編輯";
             btn.classList.add('active');
+            addBar.style.display = "flex"; // 顯示新增區塊
         } else {
             btn.innerHTML = "⚙️ 管理股票池";
             btn.classList.remove('active');
+            addBar.style.display = "none"; // 隱藏新增區塊
         }
         renderTable();
         calculate(); 
+    }
+
+    // 【全新】新增自訂標的
+    function addNewStock() {
+        let val = document.getElementById('new-stock-id').value.trim().toUpperCase();
+        if(!val) return;
+        
+        // 檢查是否已存在
+        if(displayStocks.find(s => s.id === val)) {
+            alert("這個標的已經在股票池中囉！");
+            return;
+        }
+
+        // 判斷加上 .TW (若無小數點且非純英文字母)
+        let sym = val;
+        if (!val.includes('.')) sym = val + ".TW";
+
+        displayStocks.push({id: val, sym: sym});
+        localStorage.setItem('displayStocks_v28', JSON.stringify(displayStocks));
+        
+        document.getElementById('new-stock-id').value = '';
+        renderTable();
+        
+        // 抓取新標的價格
+        fetch(`${API_URL}?symbol=${sym}&cache=${Date.now()}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.price) currentPrices[val] = data;
+                calculate();
+            }).catch(e => console.log("抓取失敗", e));
+    }
+
+    // 【全新】刪除自訂標的
+    function deleteStock(id) {
+        if(!confirm(`確定要從股票池中刪除標的「${id}」嗎？\n(這會同時清除該標的的股數與成本紀錄)`)) return;
+        
+        displayStocks = displayStocks.filter(s => s.id !== id);
+        localStorage.setItem('displayStocks_v28', JSON.stringify(displayStocks));
+        localStorage.removeItem('sh_'+id);
+        localStorage.removeItem('co_'+id);
+        
+        renderTable();
+        calculate();
     }
 
     function updateTargets() { let s = Number(document.getElementById('target-s').value) || 0; let l = Number(document.getElementById('target-l').value) || 0; document.getElementById('target-b').value = (100 - s - l).toFixed(0); calculate(); }
@@ -281,7 +329,16 @@
             if (!isEditMode && (Number(sh) === 0 || sh === "")) return;
 
             holdingCount++;
-            html += `<tr><td><b style="color:#fff">${s.id}</b></td><td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td><td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td><td id="mkt_${s.id}">-</td><td id="price_${s.id}" style="color:var(--blue)">-</td><td id="roi_${s.id}">-</td><td id="dd_${s.id}">-</td><td id="ytd_${s.id}">-</td><td id="rat_${s.id}">-</td><td id="reb_${s.id}">-</td></tr>`;
+            
+            // 編輯模式下，標的名稱旁顯示紅色 ❌ 刪除按鈕
+            let idDisplay = isEditMode ? 
+                `<div style="display:flex; align-items:center; justify-content:center;">
+                    <span class="btn-del" onclick="deleteStock('${s.id}')" title="刪除標的">✖</span>
+                    <b style="color:#fff">${s.id}</b>
+                </div>` : 
+                `<b style="color:#fff">${s.id}</b>`;
+
+            html += `<tr><td>${idDisplay}</td><td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td><td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td><td id="mkt_${s.id}">-</td><td id="price_${s.id}" style="color:var(--blue)">-</td><td id="roi_${s.id}">-</td><td id="dd_${s.id}">-</td><td id="ytd_${s.id}">-</td><td id="rat_${s.id}">-</td><td id="reb_${s.id}">-</td></tr>`;
         });
 
         if (holdingCount === 0 && !isEditMode) {
@@ -350,8 +407,8 @@
 
         displayStocks.forEach(s => {
             const sh = Number(localStorage.getItem('sh_'+s.id)) || 0, co = Number(localStorage.getItem('co_'+s.id)) || 0, p = currentPrices[s.id];
-            
             const mktEl = document.getElementById('mkt_'+s.id);
+            
             if (sh > 0 && p && p.price > 0 && mktEl) {
                 const m = sh * p.price; tCost += (sh * co);
                 let pc = parseFloat(p.prevClose) || p.price;
