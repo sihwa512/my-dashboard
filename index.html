@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V30.0</title>
+    <title>退休資產戰情室 V31.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; }
+        :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
         body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 12px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 1300px; background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 1px solid #333; box-sizing: border-box; }
         
@@ -15,32 +15,33 @@
         .privacy-toggle { position: absolute; right: 0; cursor: pointer; font-size: 1.3rem; background: #2d303e; padding: 8px 14px; border-radius: 12px; border: 1px solid #555; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
         .privacy-toggle:active { background: #444; transform: scale(0.9); }
 
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        /* 頂部 5 格卡片 */
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .summary-card { background: linear-gradient(145deg, #1b1e2e, #161926); padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .summary-card span { font-size: 0.8rem; color: #888; letter-spacing: 1px; }
         .summary-card b { font-size: 1.4rem; display: block; margin-top: 8px; font-family: 'Consolas', monospace; }
         
-        .chart-container { width: 100%; height: 260px; background: rgba(0,0,0,0.2); border-radius: 15px; border: 1px solid #444; padding: 15px; margin-bottom: 20px; box-sizing: border-box; transition: 0.3s; display: flex; flex-direction: column; }
-        .chart-header { color: var(--blue); font-weight: bold; font-size: 0.95rem; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        /* 圖表區塊：加入紫色邊框與微光 */
+        .chart-container { width: 100%; height: 260px; background: rgba(0,0,0,0.2); border-radius: 15px; border: 1px solid var(--purple); box-shadow: 0 0 15px rgba(189, 147, 249, 0.05); padding: 15px; margin-bottom: 20px; box-sizing: border-box; transition: 0.3s; display: flex; flex-direction: column; }
+        .chart-header { color: var(--purple); font-weight: bold; font-size: 0.95rem; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
         .canvas-wrapper { flex: 1; position: relative; width: 100%; }
 
-        /* 表格標題與【管理股票池】按鈕區塊 */
+        /* 表格標題與按鈕區塊 */
         .table-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; width: 100%; padding: 0 5px; box-sizing: border-box; }
         .table-title { color: var(--blue); font-weight: bold; font-size: 0.95rem; }
         .btn-edit-pool { background: transparent; border: 1px solid var(--orange); color: var(--orange); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: bold; transition: 0.3s; display: flex; align-items: center; gap: 5px; }
         .btn-edit-pool.active { background: var(--orange); color: #000; box-shadow: 0 0 10px rgba(255, 159, 28, 0.4); }
 
-        .table-wrapper { width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid #2d303e; margin-bottom: 20px; background: #1b1e2e; }
+        /* 表格容器：加入明亮的邊框 */
+        .table-wrapper { width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid var(--slate); box-shadow: 0 0 15px rgba(98, 114, 164, 0.1); margin-bottom: 20px; background: #1b1e2e; }
         table { width: 100%; border-collapse: collapse; min-width: 1100px; }
-        thead th { position: sticky; top: 0; background: #252836; color: var(--blue); padding: 15px 5px; text-align: center; font-size: 0.85rem; border-bottom: 2px solid var(--blue); cursor: pointer; }
+        thead th { position: sticky; top: 0; background: #252836; color: var(--blue); padding: 15px 5px; text-align: center; font-size: 0.85rem; border-bottom: 2px solid var(--slate); cursor: pointer; }
         td { padding: 14px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.95rem; }
         
         input { background: #252836; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 8px; width: 90px; text-align: center; font-size: 1rem; outline: none; }
         input:focus { border-color: var(--orange); }
         .input-readonly { background: #1a1c23; color: #777; border: 1px solid #333; cursor: not-allowed; }
         .privacy-mask { filter: blur(12px); opacity: 0.15; pointer-events: none; transition: 0.3s; }
-        
-        /* 無持有標的時的提示狀態 */
         .empty-state { color: #888; padding: 30px !important; font-size: 0.9rem; letter-spacing: 0.5px; }
         
         .ratio-bar-container { width: 100%; height: 45px; background: #111; border-radius: 12px; margin: 15px 0; overflow: hidden; display: flex; border: 2px solid #333; }
@@ -80,7 +81,7 @@
     </div>
     
     <div id="summary-grid" class="summary-grid">
-        <div class="summary-card" style="border: 1px solid #6272a4;">
+        <div class="summary-card" style="border: 1px solid var(--slate);">
             <span>💵 USD/TWD 匯率</span><br><b id="usd-twd-val" style="color:var(--orange)">加載中...</b>
         </div>
         <div class="summary-card" style="border: 1px solid var(--blue);">
@@ -98,7 +99,7 @@
     </div>
 
     <div id="chart-wrapper" class="chart-container">
-        <div class="chart-header">歷史淨值曲線圖</div>
+        <div class="chart-header">📈 歷史淨值曲線圖</div>
         <div class="canvas-wrapper">
             <canvas id="historyChart"></canvas>
         </div>
@@ -132,7 +133,7 @@
     <button class="btn-fetch" onclick="fetchAll()" id="btn-f">🚀 同步資產數據</button>
 
     <div class="summary-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-        <div class="summary-card" style="text-align: left; border: 1px solid #444;">
+        <div class="summary-card" style="text-align: left; border: 1px solid var(--blue); box-shadow: 0 0 15px rgba(0, 212, 255, 0.05);">
             <span style="color:var(--blue); font-weight:bold;">⚖️ 目標再平衡 (Target %)</span>
             <div style="display: flex; gap: 15px; margin: 15px 0;">
                 <div style="flex:1;"><small>股票</small><br><input type="number" id="target-s" value="40" style="width:100%" oninput="updateTargets()"></div>
@@ -146,8 +147,8 @@
             </div>
         </div>
         
-        <div class="summary-card" style="text-align: left; border: 1px solid #444;">
-            <span style="color:var(--blue); font-weight:bold;">📈 提領模擬 | 提領率：<input type="number" id="swr-rate" value="4" step="0.1" class="withdraw-input" oninput="calculate()">%</span>
+        <div class="summary-card" style="text-align: left; border: 1px solid var(--green); box-shadow: 0 0 15px rgba(0, 255, 136, 0.05);">
+            <span style="color:var(--green); font-weight:bold;">📈 提領模擬 | 提領率：<input type="number" id="swr-rate" value="4" step="0.1" class="withdraw-input" oninput="calculate()" style="border-color:var(--green); color:var(--green);">%</span>
             <div style="display: flex; gap: 30px; margin-top: 20px;">
                 <div style="flex:1;"><span>預估年領取額</span><br><b id="annual-withdraw" style="color:var(--green);">-</b></div>
                 <div style="flex:1;"><span>預估月領取額</span><br><b id="monthly-withdraw" style="color:var(--blue);">-</b></div>
@@ -159,7 +160,6 @@
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyVqkIKdI1gC50Nd5MKNYGuSjN5flQF7q2E8_BRkFKhHjs3A7JkQrr_BjgnVK0qa8P0dg/exec";
     
-    // 預設的 10 檔股票池
     const initialStocks = [
         { id: "00662", sym: "00662.TW" }, { id: "00670L", sym: "00670L.TW" }, { id: "00865B", sym: "00865B.TW" },
         { id: "0050", sym: "0050.TW" }, { id: "006208", sym: "006208.TW" }, { id: "0056", sym: "0056.TW" },
@@ -179,8 +179,6 @@
     let currentPrices = {};
     let isPrivate = localStorage.getItem('privacy_v28') === 'true';
     let equityChart = null;
-    
-    // 【新邏輯】控制是否為「股票池編輯模式」，預設為 false (只顯示持有標的)
     let isEditMode = false; 
 
     window.onload = () => { 
@@ -195,7 +193,6 @@
     function togglePrivacy() { isPrivate = !isPrivate; localStorage.setItem('privacy_v28', isPrivate); updateEyeUI(); calculate(); }
     function updateEyeUI() { document.getElementById('eye-icon').innerText = isPrivate ? '🙈' : '👁️'; document.getElementById('chart-wrapper').className = isPrivate ? 'chart-container privacy-mask' : 'chart-container'; }
     
-    // 【新功能】切換股票池管理模式
     function toggleEditMode() {
         isEditMode = !isEditMode;
         const btn = document.getElementById('edit-pool-btn');
@@ -207,7 +204,7 @@
             btn.classList.remove('active');
         }
         renderTable();
-        calculate(); // 重新綁定數據
+        calculate(); 
     }
 
     function updateTargets() { let s = Number(document.getElementById('target-s').value) || 0; let l = Number(document.getElementById('target-l').value) || 0; document.getElementById('target-b').value = (100 - s - l).toFixed(0); calculate(); }
@@ -226,21 +223,15 @@
             const sh = localStorage.getItem('sh_'+s.id) || "0";
             const co = localStorage.getItem('co_'+s.id) || "0";
             
-            // 核心邏輯：如果【不是編輯模式】且【持有股數為 0】，則不顯示該行
-            if (!isEditMode && (Number(sh) === 0 || sh === "")) {
-                return;
-            }
+            if (!isEditMode && (Number(sh) === 0 || sh === "")) return;
 
             holdingCount++;
-            const p = currentPrices[s.id] || { price: 0 };
             html += `<tr><td><b style="color:#fff">${s.id}</b></td><td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td><td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td><td id="mkt_${s.id}">-</td><td id="price_${s.id}" style="color:var(--blue)">-</td><td id="roi_${s.id}">-</td><td id="dd_${s.id}">-</td><td id="ytd_${s.id}">-</td><td id="rat_${s.id}">-</td><td id="reb_${s.id}">-</td></tr>`;
         });
 
-        // 如果目前沒有任何持股，且不在編輯模式，顯示友善提示
         if (holdingCount === 0 && !isEditMode) {
             html = `<tr><td colspan="10" class="empty-state">📦 庫存空空如也，請點擊右上方「⚙️ 管理股票池」開始買進建倉。</td></tr>`;
         }
-
         document.getElementById('list').innerHTML = html;
     }
 
@@ -283,7 +274,7 @@
         if (equityChart) equityChart.destroy(); 
         equityChart = new Chart(ctx, {
             type: 'line',
-            data: { labels: shortLabels, datasets: [{ label: '總市值', data: data, borderColor: '#00d4ff', backgroundColor: 'rgba(0, 212, 255, 0.1)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 4, pointHoverRadius: 6 }] },
+            data: { labels: shortLabels, datasets: [{ label: '總市值', data: data, borderColor: '#bd93f9', backgroundColor: 'rgba(189, 147, 249, 0.1)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 4, pointHoverRadius: 6 }] },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } } } }
         });
     }
@@ -305,9 +296,7 @@
         displayStocks.forEach(s => {
             const sh = Number(localStorage.getItem('sh_'+s.id)) || 0, co = Number(localStorage.getItem('co_'+s.id)) || 0, p = currentPrices[s.id];
             
-            // 安全判定：只對畫面上存在的元素進行渲染更新
             const mktEl = document.getElementById('mkt_'+s.id);
-            
             if (sh > 0 && p && p.price > 0 && mktEl) {
                 const m = sh * p.price; tCost += (sh * co);
                 let pc = parseFloat(p.prevClose) || p.price;
@@ -331,7 +320,6 @@
                 rEl.innerHTML = `<span style="color:${reb>=0?'var(--green)':'var(--red)'}; font-size:0.85rem;">${reb>=0?'加碼':'減碼'}<br>${Math.abs(Math.round(reb)).toLocaleString()}</span>`;
                 rEl.className = isPrivate ? 'privacy-mask' : '';
             } else if (p && p.price > 0 && mktEl) {
-                // 若為編輯模式且股數為 0，僅更新股價資訊
                 document.getElementById('price_'+s.id).innerText = p.price;
             }
         });
