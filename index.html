@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V27.3</title>
+    <title>退休資產戰情室 V28.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; }
@@ -143,23 +143,37 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyVqkIKdI1gC50Nd5MKNYGuSjN5flQF7q2E8_BRkFKhHjs3A7JkQrr_BjgnVK0qa8P0dg/exec";
-    const initialStocks = [{id:"00662", sym:"00662.TW"}, {id:"00670L", sym:"00670L.TW"}, {id:"00865B", sym:"00865B.TW"}, {id:"0050", sym:"0050.TW"}, {id:"2330", sym:"2330.TW"}];
     
-    // 【軍規級防護 1】確保快取損壞時能自動修復
+    // 完整 10 檔標的強勢回歸！
+    const initialStocks = [
+        { id: "00662", sym: "00662.TW" },
+        { id: "00670L", sym: "00670L.TW" },
+        { id: "00865B", sym: "00865B.TW" },
+        { id: "0050", sym: "0050.TW" },
+        { id: "006208", sym: "006208.TW" },
+        { id: "0056", sym: "0056.TW" },
+        { id: "00631L", sym: "00631L.TW" },
+        { id: "00663L", sym: "00663L.TW" },
+        { id: "00675L", sym: "00675L.TW" },
+        { id: "2330", sym: "2330.TW" }
+    ];
+    
     let displayStocks = initialStocks;
     try {
-        let stored = localStorage.getItem('displayStocks');
+        // 使用 v28 金鑰，強迫讀取全新的 10 檔清單
+        let stored = localStorage.getItem('displayStocks_v28');
         if (stored && stored !== "undefined") {
             displayStocks = JSON.parse(stored);
             if (!Array.isArray(displayStocks) || displayStocks.length === 0) displayStocks = initialStocks;
+        } else {
+            localStorage.setItem('displayStocks_v28', JSON.stringify(initialStocks));
         }
     } catch (e) {
-        console.warn("清單快取損壞，已自動重置");
-        localStorage.removeItem('displayStocks');
+        localStorage.setItem('displayStocks_v28', JSON.stringify(initialStocks));
     }
 
     let currentPrices = {};
-    let isPrivate = localStorage.getItem('privacy_v27') === 'true';
+    let isPrivate = localStorage.getItem('privacy_v28') === 'true';
     let equityChart = null;
 
     window.onload = () => { 
@@ -173,7 +187,7 @@
         }
     };
 
-    function togglePrivacy() { isPrivate = !isPrivate; localStorage.setItem('privacy_v27', isPrivate); updateEyeUI(); calculate(); }
+    function togglePrivacy() { isPrivate = !isPrivate; localStorage.setItem('privacy_v28', isPrivate); updateEyeUI(); calculate(); }
     function updateEyeUI() { document.getElementById('eye-icon').innerText = isPrivate ? '🙈' : '👁️'; document.getElementById('chart-wrapper').className = isPrivate ? 'chart-container privacy-mask' : 'chart-container'; }
     function updateTargets() { let s = Number(document.getElementById('target-s').value) || 0; let l = Number(document.getElementById('target-l').value) || 0; document.getElementById('target-b').value = (100 - s - l).toFixed(0); calculate(); }
     function save(id) { localStorage.setItem('sh_'+id, document.getElementById('sh_'+id).value); localStorage.setItem('co_'+id, document.getElementById('co_'+id).value); calculate(); }
@@ -219,13 +233,10 @@
     }
 
     function drawChart(historyData) {
-        // 【軍規級防護 2】阻擋 Chart.js 載入失敗導致的全域崩潰
         if (typeof Chart === 'undefined') {
             document.getElementById('chart-wrapper').style.display = 'none';
-            console.warn("Chart.js 未成功載入，已自動隱藏圖表");
             return;
         }
-
         const ctx = document.getElementById('historyChart').getContext('2d');
         const labels = Object.keys(historyData).sort(); 
         const data = labels.map(k => historyData[k]); 
@@ -309,7 +320,6 @@
             bb.style.width = bp+'%'; bb.innerText = `債券 ${bp}%`;
         }
 
-        // 【軍規級防護 3】確保寫入歷史紀錄時不會因為髒資料出錯
         if (tVal > 0) {
             try {
                 let todayDate = new Date().toISOString().split('T')[0]; 
@@ -327,13 +337,9 @@
                 localStorage.setItem('equityHistory', JSON.stringify(historyData));
                 drawChart(historyData);
             } catch(e) {
-                console.warn("歷史數據寫入失敗，已重置");
                 localStorage.removeItem('equityHistory');
             }
         }
     }
 
-    function sortTable(type) { displayStocks.sort((a, b) => { const getV = (s) => { const sh = Number(localStorage.getItem('sh_'+s.id))||0; const p = currentPrices[s.id]?.price||0; if(type==='market') return sh*p; return s.id; }; return getV(b) > getV(a) ? 1 : -1; }); renderTable(); calculate(); }
-</script>
-</body>
-</html>
+    function sortTable(type) { displayStocks.sort((a, b) => { const getV = (s) => { const sh = Number(localStorage.getItem('sh_'+s.id))||0; const p
