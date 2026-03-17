@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>綜合資產戰情室 V21.3</title>
+    <title>綜合資產戰情室 V21.4</title>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; }
         body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
@@ -36,7 +36,7 @@
 </head>
 <body>
 <div class="container">
-    <h2>📊 綜合資產戰情室 <small style="font-size: 12px; color:#666;">V21.3 邏輯修正版</small></h2>
+    <h2>📊 綜合資產戰情室 <small style="font-size: 12px; color:#666;">V21.4 邏輯修正版</small></h2>
     <div class="table-wrapper">
         <table>
             <thead>
@@ -148,7 +148,7 @@
                     currentPrices[s.id] = { 
                         price: data.price, high: data.high, 
                         prevClose: data.prevClose || data.price, 
-                        ytdOpen: data.ytdOpen || 0 // 確保抓取後端年初價格
+                        ytdOpen: data.ytdOpen || 0 
                     };
                 }
             } catch (e) { console.error(e); }
@@ -161,35 +161,41 @@
         let tCost = 0, tVal = 0, tDayChange = 0, weightedExp = 0;
         let sVal = 0, lVal = 0, bVal = 0;
 
-        // 1. 先算出總市值
+        // --- 核心修正：第一階段，先算出精確的總市值 ---
         displayStocks.forEach(s => {
             const sh = Number(localStorage.getItem('sh_'+s.id)) || 0;
             const pD = currentPrices[s.id];
             if (sh > 0 && pD && pD.price > 0) tVal += (sh * pD.price);
         });
 
-        // 2. 進行細節計算
+        // --- 第二階段，進行各項比例計算與顯示 ---
         displayStocks.forEach(s => {
             const sh = Number(localStorage.getItem('sh_'+s.id)) || 0;
             const co = Number(localStorage.getItem('co_'+s.id)) || 0;
             const pD = currentPrices[s.id];
+            
             if (sh > 0 && pD && pD.price > 0) {
-                const mkt = sh * pD.price; tCost += (sh * co);
+                const mkt = sh * pD.price; 
+                tCost += (sh * co);
                 tDayChange += (pD.price - pD.prevClose) * sh;
                 
-                if (s.id.includes('B')) bVal += mkt; else if (s.id.includes('L')) lVal += mkt; else sVal += mkt;
+                // 分類加總
+                if (s.id.includes('B')) bVal += mkt; 
+                else if (s.id.includes('L')) lVal += mkt; 
+                else sVal += mkt;
                 
                 const pl = (pD.price - co) * sh;
                 const roi = ((pD.price - co) / co * 100).toFixed(2);
                 const dd = pD.high > 0 ? ((pD.price - pD.high) / pD.high * 100).toFixed(2) : "0.00";
                 
-                // YTD 邏輯強化：若 ytdOpen 為 0 或不存在，顯示 0.00
+                // YTD 修正：改由 API 資料直接決定
                 const ytd = (pD.ytdOpen && pD.ytdOpen > 0) ? ((pD.price - pD.ytdOpen) / pD.ytdOpen * 100).toFixed(2) : "0.00";
                 
-                // 正確計算個股佔總資產比
+                // 佔比修正：現在總市值 (tVal) 已經算好了，不會再出現 100%
                 const rat = (mkt / tVal * 100).toFixed(1);
                 weightedExp += (mkt / tVal) * (s.exp || 0);
 
+                // 更新 DOM
                 document.getElementById('cost_'+s.id).innerText = Math.round(sh * co).toLocaleString();
                 document.getElementById('mkt_'+s.id).innerText = Math.round(mkt).toLocaleString();
                 document.getElementById('pl_'+s.id).innerHTML = `<span class="${pl>=0?'profit':'loss'}">${Math.round(pl).toLocaleString()}</span>`;
@@ -200,6 +206,7 @@
             }
         });
 
+        // 更新摘要區
         const tPL = tVal - tCost;
         const tROI = tCost > 0 ? (tPL / tCost * 100).toFixed(2) : 0;
         document.getElementById('summary-grid').innerHTML = `
@@ -208,11 +215,13 @@
             <div class="summary-card" style="border:2px solid ${tPL>=0?'var(--green)':'var(--red)'}"><span>累計損益</span><br><b style="color:${tPL>=0?'var(--green)':'var(--red)'}">${tPL>=0?'+':''}${Math.round(tPL).toLocaleString()} (${tROI}%)</b></div>
             <div class="summary-card" style="border:1px solid var(--purple)"><span>年化報酬</span><br><b style="color:var(--purple)">${weightedExp.toFixed(2)}%</b></div>`;
 
+        // 更新底部分類條
         if (tVal > 0) {
             const sp = (sVal/tVal*100).toFixed(1), lp = (lVal/tVal*100).toFixed(1), bp = (bVal/tVal*100).toFixed(1);
-            document.getElementById('stock-bar').style.width = sp+'%'; document.getElementById('stock-bar').innerText = sp > 5 ? `股票 ${sp}%` : '';
-            document.getElementById('lever-bar').style.width = lp+'%'; document.getElementById('lever-bar').innerText = lp > 5 ? `正2 ${lp}%` : '';
-            document.getElementById('bond-bar').style.width = bp+'%'; document.getElementById('bond-bar').innerText = bp > 5 ? `債券 ${bp}%` : '';
+            const sb = document.getElementById('stock-bar'), lb = document.getElementById('lever-bar'), bb = document.getElementById('bond-bar');
+            sb.style.width = sp+'%'; sb.innerText = sp > 5 ? `股票 ${sp}%` : '';
+            lb.style.width = lp+'%'; lb.innerText = lp > 5 ? `正2 ${lp}%` : '';
+            bb.style.width = bp+'%'; bb.innerText = bp > 5 ? `債券 ${bp}%` : '';
         }
     }
 
