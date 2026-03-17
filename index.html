@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V33.0</title>
+    <title>退休資產戰情室 V33.1</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
         body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 12px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 1300px; background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 1px solid #333; box-sizing: border-box; overflow: hidden; }
         
-        .header-container { display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 25px; width: 100%; height: 40px; }
-        h2 { margin: 0; color: var(--green); font-weight: 700; font-size: 1.5rem; white-space: nowrap; text-align: center; }
-        .header-actions { position: absolute; right: 0; display: flex; gap: 8px; }
+        /* 標題與工具列：改為真正的彈性排版，不使用絕對定位 */
+        .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; width: 100%; gap: 10px; }
+        h2 { margin: 0; color: var(--green); font-weight: 700; font-size: 1.5rem; white-space: nowrap; display: flex; align-items: center; letter-spacing: 0.5px; }
+        .header-actions { display: flex; gap: 8px; flex-shrink: 0; }
         .icon-btn { cursor: pointer; font-size: 1.2rem; background: #2d303e; padding: 8px 12px; border-radius: 12px; border: 1px solid #555; transition: 0.2s; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
         .icon-btn:active { background: #444; transform: scale(0.9); }
 
@@ -30,7 +31,6 @@
         .btn-edit-pool { background: transparent; border: 1px solid var(--orange); color: var(--orange); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: bold; transition: 0.3s; display: flex; align-items: center; gap: 5px; }
         .btn-edit-pool.active { background: var(--orange); color: #000; box-shadow: 0 0 10px rgba(255, 159, 28, 0.4); }
 
-        /* 新增：自訂股票輸入區塊 */
         .add-stock-bar { display: none; align-items: center; gap: 10px; background: #1b1e2e; padding: 12px; border-radius: 12px; border: 1px dashed var(--orange); margin-bottom: 15px; animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
         .add-input { background: #252836; border: 1px solid #555; color: #fff; padding: 8px 12px; border-radius: 8px; width: 120px; font-size: 1rem; text-transform: uppercase; outline: none; }
@@ -62,9 +62,11 @@
 
         @media (max-width: 768px) {
             .container { padding: 12px; border-radius: 0; }
-            h2 { font-size: 1.15rem; margin-right: 120px; }
-            .header-actions { gap: 5px; }
-            .icon-btn { font-size: 1.05rem; padding: 6px 10px; }
+            /* 標題與按鈕完美適應手機寬度 */
+            .header-container { gap: 5px; margin-bottom: 15px; }
+            h2 { font-size: 1.15rem; flex-shrink: 1; overflow: hidden; }
+            .header-actions { gap: 6px; }
+            .icon-btn { font-size: 1rem; padding: 6px 10px; border-radius: 10px; }
             
             .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
             .summary-grid > div:first-child { grid-column: span 2; }
@@ -257,28 +259,23 @@
         if (isEditMode) {
             btn.innerHTML = "✅ 完成編輯";
             btn.classList.add('active');
-            addBar.style.display = "flex"; // 顯示新增區塊
+            addBar.style.display = "flex"; 
         } else {
             btn.innerHTML = "⚙️ 管理股票池";
             btn.classList.remove('active');
-            addBar.style.display = "none"; // 隱藏新增區塊
+            addBar.style.display = "none"; 
         }
         renderTable();
         calculate(); 
     }
 
-    // 【全新】新增自訂標的
     function addNewStock() {
         let val = document.getElementById('new-stock-id').value.trim().toUpperCase();
         if(!val) return;
-        
-        // 檢查是否已存在
         if(displayStocks.find(s => s.id === val)) {
             alert("這個標的已經在股票池中囉！");
             return;
         }
-
-        // 判斷加上 .TW (若無小數點且非純英文字母)
         let sym = val;
         if (!val.includes('.')) sym = val + ".TW";
 
@@ -288,7 +285,6 @@
         document.getElementById('new-stock-id').value = '';
         renderTable();
         
-        // 抓取新標的價格
         fetch(`${API_URL}?symbol=${sym}&cache=${Date.now()}`)
             .then(res => res.json())
             .then(data => {
@@ -297,15 +293,12 @@
             }).catch(e => console.log("抓取失敗", e));
     }
 
-    // 【全新】刪除自訂標的
     function deleteStock(id) {
         if(!confirm(`確定要從股票池中刪除標的「${id}」嗎？\n(這會同時清除該標的的股數與成本紀錄)`)) return;
-        
         displayStocks = displayStocks.filter(s => s.id !== id);
         localStorage.setItem('displayStocks_v28', JSON.stringify(displayStocks));
         localStorage.removeItem('sh_'+id);
         localStorage.removeItem('co_'+id);
-        
         renderTable();
         calculate();
     }
@@ -330,7 +323,6 @@
 
             holdingCount++;
             
-            // 編輯模式下，標的名稱旁顯示紅色 ❌ 刪除按鈕
             let idDisplay = isEditMode ? 
                 `<div style="display:flex; align-items:center; justify-content:center;">
                     <span class="btn-del" onclick="deleteStock('${s.id}')" title="刪除標的">✖</span>
