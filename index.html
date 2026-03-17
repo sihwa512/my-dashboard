@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>退休資產戰情室 V23.1</title>
+    <title>退休資產戰情室 V23.2</title>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; }
         body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
@@ -24,7 +24,7 @@
         .tool-box { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 15px; border: 1px solid #333; }
         .tool-title { font-size: 0.9rem; color: var(--blue); margin-bottom: 10px; display: block; font-weight: bold; }
         .ratio-bar-container { width: 100%; height: 25px; background: #222; border-radius: 8px; margin: 10px 0; overflow: hidden; display: flex; border: 1px solid #444; }
-        .part { transition: 1s; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.75rem; font-weight: bold; }
+        .part { transition: 1s; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.75rem; font-weight: bold; overflow: hidden; white-space: nowrap; }
         .stock-part { background: linear-gradient(90deg, #007acc, #00d4ff); }
         .lever-part { background: linear-gradient(90deg, #6272a4, #bd93f9); }
         .bond-part { background: linear-gradient(90deg, #e67e22, #ff9f1c); }
@@ -65,9 +65,9 @@
         <div class="tool-box">
             <span class="tool-title">⚖️ 目標配置再平衡 (Target %)</span>
             <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <div><small>股票</small><br><input type="number" id="target-s" value="60" oninput="calculate()"></div>
-                <div><small>正2</small><br><input type="number" id="target-l" value="10" oninput="calculate()"></div>
-                <div><small>債券</small><br><input type="number" id="target-b" value="30" oninput="calculate()"></div>
+                <div><small style="color:var(--blue)">●股票</small><br><input type="number" id="target-s" value="40" oninput="calculate()"></div>
+                <div><small style="color:var(--purple)">●正2</small><br><input type="number" id="target-l" value="20" oninput="calculate()"></div>
+                <div><small style="color:var(--orange)">●債券</small><br><input type="number" id="target-b" value="40" oninput="calculate()"></div>
             </div>
             <div class="ratio-bar-container">
                 <div id="stock-bar" class="part stock-part" style="width: 0%;"></div>
@@ -95,9 +95,16 @@
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyVqkIKdI1gC50Nd5MKNYGuSjN5flQF7q2E8_BRkFKhHjs3A7JkQrr_BjgnVK0qa8P0dg/exec";
     const initialStocks = [
-        { id: "00662", sym: "00662.TW", name: "富邦NASDAQ", type: "S" },
-        { id: "00670L", sym: "00670L.TW", name: "富邦NASDAQ正2", type: "L" },
-        { id: "00865B", sym: "00865B.TW", name: "國泰美債0-1年", type: "B" }
+        { id: "00662", sym: "00662.TW", name: "富邦NASDAQ" },
+        { id: "00670L", sym: "00670L.TW", name: "富邦NASDAQ正2" },
+        { id: "00865B", sym: "00865B.TW", name: "國泰美債0-1年" },
+        { id: "0050", sym: "0050.TW", name: "元大台灣50" },
+        { id: "006208", sym: "006208.TW", name: "富邦台50" },
+        { id: "0056", sym: "0056.TW", name: "元大高股息" },
+        { id: "00631L", sym: "00631L.TW", name: "元大台灣50正2" },
+        { id: "00663L", sym: "00663L.TW", name: "國泰台灣加權正2" },
+        { id: "00675L", sym: "00675L.TW", name: "富邦臺灣加權正2" },
+        { id: "2330", sym: "2330.TW", name: "台積電" }
     ];
 
     let displayStocks = JSON.parse(localStorage.getItem('displayStocks')) || initialStocks;
@@ -106,13 +113,16 @@
 
     window.onload = () => { renderTable(); calculate(); };
 
+    // 智能判斷股票類別，不再依賴緩存的 type
+    function getStockType(id) {
+        if (id.includes('B')) return 'B';
+        if (id.includes('L')) return 'L';
+        return 'S';
+    }
+
     function togglePrivacy() {
         isPrivate = !isPrivate;
         calculate();
-    }
-
-    function resetData() {
-        if(confirm("確定重置數據？")) { localStorage.removeItem('displayStocks'); location.reload(); }
     }
 
     function save(id) {
@@ -164,18 +174,26 @@
         const targetL = Number(document.getElementById('target-l').value)/100;
         const targetB = Number(document.getElementById('target-b').value)/100;
 
-        // 第一遍：算出總量
+        // 第一遍：精算總量與各類別加總
         displayStocks.forEach(s => {
             const sh = Number(localStorage.getItem('sh_'+s.id)) || 0;
             const pD = currentPrices[s.id];
             if (sh > 0 && pD && pD.price > 0) {
                 const mkt = sh * pD.price;
                 tVal += mkt;
-                if (s.type === 'S') sVal += mkt; else if (s.type === 'L') lVal += mkt; else bVal += mkt;
+                let sType = getStockType(s.id);
+                if (sType === 'S') sVal += mkt;
+                else if (sType === 'L') lVal += mkt;
+                else bVal += mkt;
             }
         });
 
-        // 第二遍：細節計算與顯示
+        // 算出各類別的「目標差額」
+        const diffS = (tVal * targetS) - sVal;
+        const diffL = (tVal * targetL) - lVal;
+        const diffB = (tVal * targetB) - bVal;
+
+        // 第二遍：細部計算
         displayStocks.forEach(s => {
             const sh = Number(localStorage.getItem('sh_'+s.id)) || 0;
             const co = Number(localStorage.getItem('co_'+s.id)) || 0;
@@ -183,7 +201,6 @@
             
             if (sh > 0 && pD && pD.price > 0) {
                 const mkt = sh * pD.price; tCost += (sh * co);
-                // 今日變動修正邏輯
                 if(pD.prevClose > 0) tDayChange += (pD.price - pD.prevClose) * sh;
                 
                 const pl = (pD.price - co) * sh;
@@ -193,20 +210,26 @@
                 const rat = (mkt / tVal * 100).toFixed(1);
                 tDrawdown += (mkt / tVal) * Number(dd);
 
-                const mktText = Math.round(mkt).toLocaleString();
-                document.getElementById('mkt_'+s.id).innerText = mktText;
+                // 精確比例再平衡分配：該標的在自己類別中佔多大比例，就分配多少差額
+                let sType = getStockType(s.id);
+                let stockRebDiff = 0;
+                if (sType === 'S' && sVal > 0) stockRebDiff = diffS * (mkt / sVal);
+                else if (sType === 'L' && lVal > 0) stockRebDiff = diffL * (mkt / lVal);
+                else if (sType === 'B' && bVal > 0) stockRebDiff = diffB * (mkt / bVal);
+
+                document.getElementById('mkt_'+s.id).innerText = Math.round(mkt).toLocaleString();
                 document.getElementById('mkt_'+s.id).className = isPrivate ? 'privacy-mask' : '';
                 document.getElementById('roi_'+s.id).innerHTML = `<span class="${pl>=0?'profit':'loss'}">${roi}%</span>`;
                 document.getElementById('dd_'+s.id).innerText = dd + "%";
                 document.getElementById('ytd_'+s.id).innerHTML = `<span class="${ytd>=0?'profit':'loss'}">${ytd}%</span>`;
                 document.getElementById('rat_'+s.id).innerText = rat + "%";
                 
-                // 再平衡計算修正
-                let targetRatio = s.type === 'S' ? targetS : (s.type === 'L' ? targetL : targetB);
-                let diff = (tVal * targetRatio) - mkt;
-                let color = diff >= 0 ? 'var(--green)' : 'var(--red)';
-                document.getElementById('reb_'+s.id).innerHTML = `<span style="color:${color}; font-size:0.8rem;">${diff >= 0 ? '需加碼' : '需減碼'}<br>${Math.abs(Math.round(diff)).toLocaleString()}</span>`;
+                let color = stockRebDiff >= 0 ? 'var(--green)' : 'var(--red)';
+                document.getElementById('reb_'+s.id).innerHTML = `<span style="color:${color}; font-size:0.8rem;">${stockRebDiff >= 0 ? '需加碼' : '需減碼'}<br>${Math.abs(Math.round(stockRebDiff)).toLocaleString()}</span>`;
                 document.getElementById('reb_'+s.id).className = isPrivate ? 'privacy-mask' : '';
+            } else {
+                document.getElementById('mkt_'+s.id).innerText = "-";
+                document.getElementById('reb_'+s.id).innerText = "-";
             }
         });
 
@@ -218,7 +241,6 @@
             <div class="summary-card" style="border:2px solid ${tPL>=0?'var(--green)':'var(--red)'}"><span>累積損益</span><br><b class="${isPrivate?'privacy-mask':''}" style="color:${tPL>=0?'var(--green)':'var(--red)'}">${Math.round(tPL).toLocaleString()} (${tROI}%)</b></div>
             <div class="summary-card" style="border:1px solid var(--orange)"><span>風險溫度計 (組合回撤)</span><br><b style="color:var(--red)">${tDrawdown.toFixed(2)}%</b></div>`;
 
-        // 提領與配置條同步
         const annual = tVal * 0.04;
         const monthly = annual / 12;
         const aW = document.getElementById('annual-withdraw');
@@ -230,9 +252,10 @@
 
         if (tVal > 0) {
             const sp = (sVal/tVal*100).toFixed(1), lp = (lVal/tVal*100).toFixed(1), bp = (bVal/tVal*100).toFixed(1);
-            document.getElementById('stock-bar').style.width = sp+'%'; document.getElementById('stock-bar').innerText = sp > 5 ? `股票 ${sp}%` : '';
-            document.getElementById('lever-bar').style.width = lp+'%'; document.getElementById('lever-bar').innerText = lp > 5 ? `正2 ${lp}%` : '';
-            document.getElementById('bond-bar').style.width = bp+'%'; document.getElementById('bond-bar').innerText = bp > 5 ? `債券 ${bp}%` : '';
+            const sb = document.getElementById('stock-bar'), lb = document.getElementById('lever-bar'), bb = document.getElementById('bond-bar');
+            sb.style.width = sp+'%'; sb.innerText = sp > 5 ? `股票 ${sp}%` : '';
+            lb.style.width = lp+'%'; lb.innerText = lp > 5 ? `正2 ${lp}%` : '';
+            bb.style.width = bp+'%'; bb.innerText = bp > 5 ? `債券 ${bp}%` : '';
         }
     }
 </script>
