@@ -3,27 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V27.1</title>
+    <title>退休資產戰情室 V27.2</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; }
         body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 12px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 1300px; background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 1px solid #333; box-sizing: border-box; }
         
-        /* 標題與隱私按鈕優化 */
-        h2 { text-align: center; color: var(--green); margin-bottom: 20px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 1.5rem; flex-wrap: wrap; }
-        .title-text { white-space: nowrap; }
-        .privacy-toggle { cursor: pointer; font-size: 1.3rem; background: #2d303e; padding: 8px 16px; border-radius: 12px; border: 1px solid #444; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
-        .privacy-toggle:hover { background: #3d4155; }
+        /* 標題與隱私按鈕終極排版：保證居中且按鈕靠右 */
+        .header-container { display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 25px; width: 100%; }
+        h2 { margin: 0; color: var(--green); font-weight: 700; font-size: 1.5rem; white-space: nowrap; }
+        .privacy-toggle { position: absolute; right: 0; cursor: pointer; font-size: 1.3rem; background: #2d303e; padding: 8px 14px; border-radius: 12px; border: 1px solid #555; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
+        .privacy-toggle:active { background: #444; transform: scale(0.9); }
 
-        /* 5 格卡片自適應 */
+        /* 5 格卡片自適應：加入全彩邊框 */
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
-        .summary-card { background: linear-gradient(145deg, #1b1e2e, #161926); padding: 15px; border-radius: 15px; border: 1px solid #444; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .summary-card { background: linear-gradient(145deg, #1b1e2e, #161926); padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .summary-card span { font-size: 0.8rem; color: #888; letter-spacing: 1px; }
         .summary-card b { font-size: 1.4rem; display: block; margin-top: 8px; font-family: 'Consolas', monospace; }
         
-        /* 圖表區塊 (新增內部標題空間) */
-        .chart-container { width: 100%; height: 260px; background: rgba(0,0,0,0.2); border-radius: 15px; border: 1px solid #333; padding: 15px; margin-bottom: 20px; box-sizing: border-box; transition: 0.3s; display: flex; flex-direction: column; }
+        /* 圖表區塊 */
+        .chart-container { width: 100%; height: 260px; background: rgba(0,0,0,0.2); border-radius: 15px; border: 1px solid #444; padding: 15px; margin-bottom: 20px; box-sizing: border-box; transition: 0.3s; display: flex; flex-direction: column; }
         .chart-header { color: var(--blue); font-weight: bold; font-size: 0.95rem; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
         .canvas-wrapper { flex: 1; position: relative; width: 100%; }
 
@@ -36,34 +36,34 @@
         .input-readonly { background: #1a1c23; color: #777; border: 1px solid #333; cursor: not-allowed; }
         .privacy-mask { filter: blur(12px); opacity: 0.15; pointer-events: none; transition: 0.3s; }
         
-        /* 比例條優化 */
+        /* 比例條優化：移除強制最小寬度，改用字體縮放，確保總寬度不破版 */
         .ratio-bar-container { width: 100%; height: 45px; background: #111; border-radius: 12px; margin: 15px 0; overflow: hidden; display: flex; border: 2px solid #333; }
-        .part { height: 100%; transition: 1.2s cubic-bezier(0.18, 0.89, 0.32, 1.28); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.85rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+        .part { height: 100%; transition: 1.2s cubic-bezier(0.18, 0.89, 0.32, 1.28); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.85rem; font-weight: bold; white-space: nowrap; overflow: hidden; }
         .stock-part { background: linear-gradient(90deg, #007acc, #00d4ff); }
-        .lever-part { background: linear-gradient(90deg, #6272a4, #bd93f9); border-left: 2px solid rgba(0,0,0,0.5); border-right: 2px solid rgba(0,0,0,0.5); min-width: 100px; }
+        .lever-part { background: linear-gradient(90deg, #6272a4, #bd93f9); border-left: 1px solid rgba(0,0,0,0.5); border-right: 1px solid rgba(0,0,0,0.5); }
         .bond-part { background: linear-gradient(90deg, #e67e22, #ff9f1c); }
 
         .btn-fetch { background: linear-gradient(135deg, #007acc, #00d4ff); color: white; padding: 18px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 25px; font-size: 1.2rem; box-shadow: 0 6px 20px rgba(0, 122, 204, 0.4); transition: 0.3s; }
         .btn-fetch:active { transform: translateY(2px); box-shadow: none; }
-        .withdraw-input { width: 65px; background: #1b1e2e; border: 2px solid var(--blue); color: var(--blue); padding: 5px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .withdraw-input { width: 65px; background: #1b1e2e; border: 2px solid var(--blue); color: var(--blue); padding: 5px; border-radius: 8px; font-weight: bold; text-align: center; }
 
-        /* 手機版專屬細節調整 */
+        /* 手機版專屬極致排版 */
         @media (max-width: 768px) {
             .container { padding: 12px; border-radius: 0; }
-            h2 { font-size: 1.25rem; margin-bottom: 15px; }
-            .privacy-toggle { font-size: 1.1rem; padding: 6px 12px; }
+            h2 { font-size: 1.3rem; }
+            .privacy-toggle { font-size: 1.1rem; padding: 6px 10px; }
             
-            .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
-            .summary-grid > div:first-child { grid-column: span 2; } /* 匯率卡片佔滿 */
+            .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+            .summary-grid > div:first-child { grid-column: span 2; } /* 匯率卡片置頂佔滿 */
             .summary-card { padding: 12px; }
             .summary-card b { font-size: 1.2rem; }
             
-            .chart-container { height: 220px; padding: 10px; margin-bottom: 15px; }
+            .chart-container { height: 200px; padding: 10px; margin-bottom: 15px; }
             .chart-header { font-size: 0.85rem; margin-bottom: 5px; }
             
-            /* 解除手機版紫色區塊的強制過寬，避免擠壓橘色字體 */
-            .lever-part { min-width: 65px; } 
-            .part { font-size: 0.75rem; }
+            /* 比例條文字在手機縮小，避免互相擠壓 */
+            .ratio-bar-container { height: 35px; }
+            .part { font-size: 0.65rem; letter-spacing: -0.5px; }
             
             .btn-fetch { padding: 15px; font-size: 1.1rem; margin-bottom: 15px; }
         }
@@ -71,14 +71,27 @@
 </head>
 <body>
 <div class="container">
-    <h2><span class="title-text">📊 綜合退休戰情室</span> <span id="eye-icon" class="privacy-toggle" onclick="togglePrivacy()">👁️</span></h2>
+    <div class="header-container">
+        <h2>📊 綜合退休戰情室</h2>
+        <span id="eye-icon" class="privacy-toggle" onclick="togglePrivacy()">👁️</span>
+    </div>
     
     <div id="summary-grid" class="summary-grid">
-        <div class="summary-card"><span>💵 USD/TWD 匯率</span><br><b id="usd-twd-val" style="color:var(--orange)">加載中...</b></div>
-        <div class="summary-card"><span>資產總市值</span><br><b id="sum-val" style="color:var(--blue)">-</b></div>
-        <div class="summary-card"><span>今日損益跳動</span><br><b id="sum-change">-</b></div>
-        <div class="summary-card" id="sum-pl-card"><span>累積總損益</span><br><b id="sum-pl">-</b></div>
-        <div class="summary-card" style="border:1px solid var(--orange)"><span>風險溫度(總回撤)</span><br><b id="sum-dd" style="color:var(--red)">-</b></div>
+        <div class="summary-card" style="border: 1px solid #6272a4;">
+            <span>💵 USD/TWD 匯率</span><br><b id="usd-twd-val" style="color:var(--orange)">加載中...</b>
+        </div>
+        <div class="summary-card" style="border: 1px solid var(--blue);">
+            <span>資產總市值</span><br><b id="sum-val" style="color:var(--blue)">-</b>
+        </div>
+        <div class="summary-card" id="sum-change-card">
+            <span>今日損益跳動</span><br><b id="sum-change">-</b>
+        </div>
+        <div class="summary-card" id="sum-pl-card">
+            <span>累積總損益</span><br><b id="sum-pl">-</b>
+        </div>
+        <div class="summary-card" style="border: 1px solid var(--orange);">
+            <span>風險溫度(總回撤)</span><br><b id="sum-dd" style="color:var(--red)">-</b>
+        </div>
     </div>
 
     <div id="chart-wrapper" class="chart-container">
@@ -111,7 +124,7 @@
     <button class="btn-fetch" onclick="fetchAll()" id="btn-f">🚀 同步資產數據</button>
 
     <div class="summary-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-        <div class="summary-card" style="text-align: left;">
+        <div class="summary-card" style="text-align: left; border: 1px solid #444;">
             <span style="color:var(--blue); font-weight:bold;">⚖️ 目標再平衡 (Target %)</span>
             <div style="display: flex; gap: 15px; margin: 15px 0;">
                 <div style="flex:1;"><small>股票</small><br><input type="number" id="target-s" value="40" style="width:100%" oninput="updateTargets()"></div>
@@ -125,7 +138,7 @@
             </div>
         </div>
         
-        <div class="summary-card" style="text-align: left;">
+        <div class="summary-card" style="text-align: left; border: 1px solid #444;">
             <span style="color:var(--blue); font-weight:bold;">📈 提領模擬 | 提領率：<input type="number" id="swr-rate" value="4" step="0.1" class="withdraw-input" oninput="calculate()">%</span>
             <div style="display: flex; gap: 30px; margin-top: 20px;">
                 <div style="flex:1;"><span>預估年領取額</span><br><b id="annual-withdraw" style="color:var(--green);">-</b></div>
@@ -193,7 +206,7 @@
                 let diff = data.price - (data.prevClose || data.price);
                 let color = diff >= 0 ? 'var(--red)' : 'var(--green)'; 
                 let sign = diff >= 0 ? '+' : '';
-                document.getElementById('usd-twd-val').innerHTML = `${data.price.toFixed(3)} <span style="font-size:0.9rem; color:${color}">(${sign}${diff.toFixed(3)})</span>`;
+                document.getElementById('usd-twd-val').innerHTML = `${data.price.toFixed(3)} <span style="font-size:0.85rem; color:${color}">(${sign}${diff.toFixed(3)})</span>`;
             }
         } catch (e) {
             document.getElementById('usd-twd-val').innerText = "暫無數據";
@@ -259,8 +272,7 @@
         const ts = Number(document.getElementById('target-s').value)/100, tl = Number(document.getElementById('target-l').value)/100, tb = (100 - (ts*100) - (tl*100))/100;
 
         displayStocks.forEach(s => {
-            const sh = Number(localStorage.getItem('sh_'+s.id)) || 0;
-            const p = currentPrices[s.id];
+            const sh = Number(localStorage.getItem('sh_'+s.id)) || 0, p = currentPrices[s.id];
             if (sh > 0 && p && p.price > 0) {
                 const m = sh * p.price; tVal += m;
                 if (s.id.includes('B')) bVal += m; else if (s.id.includes('L')) lVal += m; else sVal += m;
@@ -289,52 +301,4 @@
                 document.getElementById('ytd_'+s.id).innerHTML = `<span style="color:${p.ytdOpen>0?(p.price>=p.ytdOpen?'var(--green)':'var(--red)'):''}">${p.ytdOpen > 0 ? ((p.price-p.ytdOpen)/p.ytdOpen*100).toFixed(2)+"%" : "-"}</span>`;
                 
                 const rEl = document.getElementById('reb_'+s.id);
-                rEl.innerHTML = `<span style="color:${reb>=0?'var(--green)':'var(--red)'}; font-size:0.85rem;">${reb>=0?'加碼':'減碼'}<br>${Math.abs(Math.round(reb)).toLocaleString()}</span>`;
-                rEl.className = isPrivate ? 'privacy-mask' : '';
-            }
-        });
-
-        const pl = tVal - tCost, pPct = tCost > 0 ? (pl / tCost * 100).toFixed(2) : 0;
-        
-        document.getElementById('sum-val').innerText = Math.round(tVal).toLocaleString();
-        document.getElementById('sum-val').className = isPrivate ? 'privacy-mask' : '';
-        document.getElementById('sum-change').innerHTML = `<span style="color:${tDayChange>=0?'var(--green)':'var(--red)'}">${tDayChange>=0?'+':''}${Math.round(tDayChange).toLocaleString()}</span>`;
-        document.getElementById('sum-change').className = isPrivate ? 'privacy-mask' : '';
-        document.getElementById('sum-pl').innerHTML = `<span style="color:${pl>=0?'var(--green)':'var(--red)'}">${Math.round(pl).toLocaleString()} (${pPct}%)</span>`;
-        document.getElementById('sum-pl').className = isPrivate ? 'privacy-mask' : '';
-        document.getElementById('sum-pl-card').style.border = `1px solid ${pl>=0?'var(--green)':'var(--red)'}`;
-        document.getElementById('sum-dd').innerText = tDrawdown.toFixed(2) + "%";
-
-        const ann = tVal * swrRate;
-        document.getElementById('annual-withdraw').innerText = "NT$ " + Math.round(ann).toLocaleString();
-        document.getElementById('monthly-withdraw').innerText = "NT$ " + Math.round(ann/12).toLocaleString();
-        document.getElementById('annual-withdraw').className = isPrivate ? 'privacy-mask' : '';
-        document.getElementById('monthly-withdraw').className = isPrivate ? 'privacy-mask' : '';
-
-        if (tVal > 0) {
-            const sp = (sVal/tVal*100).toFixed(1), lp = (lVal/tVal*100).toFixed(1), bp = (bVal/tVal*100).toFixed(1);
-            const sb = document.getElementById('stock-bar'), lb = document.getElementById('lever-bar'), bb = document.getElementById('bond-bar');
-            sb.style.width = sp+'%'; sb.innerText = `股票 ${sp}%`;
-            lb.style.width = lp+'%'; lb.innerText = `正2 ${lp}%`;
-            bb.style.width = bp+'%'; bb.innerText = `債券 ${bp}%`;
-        }
-
-        if (tVal > 0) {
-            let todayDate = new Date().toISOString().split('T')[0]; 
-            let historyData = JSON.parse(localStorage.getItem('equityHistory')) || {};
-            if (Object.keys(historyData).length === 0) {
-                let yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-                historyData[yesterday] = Math.round(tVal - tDayChange);
-            }
-            historyData[todayDate] = Math.round(tVal);
-            let keys = Object.keys(historyData).sort();
-            if (keys.length > 30) delete historyData[keys[0]];
-            localStorage.setItem('equityHistory', JSON.stringify(historyData));
-            drawChart(historyData);
-        }
-    }
-
-    function sortTable(type) { displayStocks.sort((a, b) => { const getV = (s) => { const sh = Number(localStorage.getItem('sh_'+s.id))||0; const p = currentPrices[s.id]?.price||0; if(type==='market') return sh*p; return s.id; }; return getV(b) > getV(a) ? 1 : -1; }); renderTable(); calculate(); }
-</script>
-</body>
-</html>
+                rEl.innerHTML = `<span style="color:${reb>=0?'var(--green)':'var(--
