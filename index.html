@@ -3,43 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V25.5</title>
+    <title>退休資產戰情室 V26.0</title>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; }
-        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 1300px; background: var(--card); padding: 15px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; box-sizing: border-box; }
-        h2 { text-align: center; color: var(--green); margin-bottom: 15px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 1.3rem; }
-        .privacy-toggle { cursor: pointer; font-size: 1.4rem; background: #2d303e; padding: 10px 20px; border-radius: 12px; border: 1px solid #444; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 12px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 1300px; background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 1px solid #333; box-sizing: border-box; }
         
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px; }
-        .summary-card { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 15px; border: 1px solid #444; text-align: center; min-height: 85px; }
-        .summary-card b { font-size: 1.25rem; display: block; margin-top: 5px; }
+        /* 標題與隱私按鈕 */
+        h2 { text-align: center; color: var(--green); margin-bottom: 20px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 1.5rem; }
+        .privacy-toggle { cursor: pointer; font-size: 1.3rem; background: #2d303e; padding: 8px 16px; border-radius: 12px; border: 1px solid #444; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
+        .privacy-toggle:hover { background: #3d4155; }
+
+        /* 頂部數據卡片 */
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .summary-card { background: linear-gradient(145deg, #1b1e2e, #161926); padding: 18px; border-radius: 18px; border: 1px solid #444; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .summary-card span { font-size: 0.85rem; color: #888; letter-spacing: 1px; }
+        .summary-card b { font-size: 1.5rem; display: block; margin-top: 8px; font-family: 'Consolas', monospace; }
         
-        .table-wrapper { width: 100%; overflow-x: auto; border-radius: 10px; border: 1px solid #2d303e; margin-bottom: 15px; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; min-width: 1050px; }
-        thead th { position: sticky; top: 0; background: #1b1e2e; color: var(--blue); padding: 12px 5px; text-align: center; font-size: 0.8rem; border-bottom: 2px solid var(--blue); }
-        td { padding: 12px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.85rem; }
+        /* 表格區塊 */
+        .table-wrapper { width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid #2d303e; margin-bottom: 25px; background: #1b1e2e; }
+        table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+        thead th { position: sticky; top: 0; background: #252836; color: var(--blue); padding: 15px 5px; text-align: center; font-size: 0.85rem; border-bottom: 2px solid var(--blue); }
+        td { padding: 14px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.95rem; }
         
-        input { background: #252836; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 8px; width: 80px; text-align: center; font-size: 1rem; }
-        .input-readonly { background: #1a1c23; color: #666; border: 1px solid #333; cursor: not-allowed; }
-        .privacy-mask { filter: blur(12px); opacity: 0.1; pointer-events: none; }
+        input { background: #252836; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 8px; width: 90px; text-align: center; font-size: 1rem; transition: 0.3s; }
+        input:focus { border-color: var(--blue); box-shadow: 0 0 8px rgba(0, 212, 255, 0.3); outline: none; }
+        .input-readonly { background: #1a1c23; color: #777; border: 1px solid #333; cursor: not-allowed; }
         
-        /* 比例條與紫色文字終極優化 */
-        .ratio-bar-container { width: 100%; height: 42px; background: #222; border-radius: 10px; margin: 10px 0; overflow: hidden; display: flex; border: 1px solid #444; }
-        .part { transition: 0.8s; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.8rem; font-weight: bold; white-space: nowrap; min-width: 50px; flex-shrink: 0; }
+        .privacy-mask { filter: blur(12px); opacity: 0.15; pointer-events: none; }
+        
+        /* 比例條終極優化：採用彈性容器解決文字顯示問題 */
+        .ratio-bar-container { width: 100%; height: 48px; background: #111; border-radius: 12px; margin: 15px 0; overflow: hidden; display: flex; border: 2px solid #333; position: relative; }
+        .part { height: 100%; transition: 1.2s cubic-bezier(0.18, 0.89, 0.32, 1.28); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.9rem; font-weight: bold; white-space: nowrap; box-sizing: border-box; }
         .stock-part { background: linear-gradient(90deg, #007acc, #00d4ff); }
-        .lever-part { background: linear-gradient(90deg, #6272a4, #bd93f9); border-left: 2px solid #000; border-right: 2px solid #000; min-width: 85px; }
+        .lever-part { background: linear-gradient(90deg, #6272a4, #bd93f9); border-left: 2px solid rgba(0,0,0,0.5); border-right: 2px solid rgba(0,0,0,0.5); min-width: 100px; }
         .bond-part { background: linear-gradient(90deg, #e67e22, #ff9f1c); }
 
-        .btn-fetch { background: linear-gradient(135deg, #007acc, #00d4ff); color: white; padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 15px; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2); }
-        .withdraw-input { width: 60px; background: #1b1e2e; border: 1px solid var(--blue); color: var(--blue); padding: 4px; border-radius: 6px; font-weight: bold; outline: none; }
-        
-        @media (max-width: 768px) { .summary-grid { grid-template-columns: 1fr 1fr; } }
+        /* 按鈕美化 */
+        .btn-fetch { background: linear-gradient(135deg, #007acc, #00d4ff); color: white; padding: 18px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 25px; font-size: 1.2rem; transition: 0.3s; box-shadow: 0 6px 20px rgba(0, 122, 204, 0.4); }
+        .btn-fetch:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0, 122, 204, 0.5); }
+        .btn-fetch:active { transform: translateY(1px); }
+
+        .withdraw-input { width: 65px; background: #1b1e2e; border: 2px solid var(--blue); color: var(--blue); padding: 5px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+        @media (max-width: 768px) {
+            .summary-grid { grid-template-columns: 1fr 1fr; }
+            .container { padding: 15px; border-radius: 0; }
+            h2 { font-size: 1.2rem; }
+            .part { font-size: 0.75rem; min-width: 80px; }
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <h2>📊 退休資產戰情室 <span id="eye-icon" class="privacy-toggle" onclick="togglePrivacy()">👁️</span></h2>
+    <h2>📊 綜合退休戰情室 <span id="eye-icon" class="privacy-toggle" onclick="togglePrivacy()">👁️</span></h2>
+    
     <div id="summary-grid" class="summary-grid"></div>
 
     <div class="table-wrapper">
@@ -62,15 +80,15 @@
         </table>
     </div>
 
-    <button class="btn-fetch" onclick="fetchAll()" id="btn-f">🚀 同步即時數據</button>
+    <button class="btn-fetch" onclick="fetchAll()" id="btn-f">🚀 同步資產數據</button>
 
-    <div class="tools-section" style="width:100%">
-        <div class="tool-box" style="background:rgba(0,0,0,0.2); padding:15px; border-radius:15px; border:1px solid #444;">
-            <span style="color:var(--blue); font-weight:bold; font-size:0.9rem;">⚖️ 目標配置再平衡 (Target %)</span>
-            <div style="display: flex; gap: 8px; margin: 10px 0;">
-                <div style="flex:1;"><small>股票</small><br><input type="number" id="target-s" value="60" style="width:100%" oninput="updateTargets()"></div>
-                <div style="flex:1;"><small>正2</small><br><input type="number" id="target-l" value="10" style="width:100%" oninput="updateTargets()"></div>
-                <div style="flex:1;"><small>債券</small><br><input type="number" id="target-b" value="30" style="width:100%" class="input-readonly" readonly></div>
+    <div class="summary-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+        <div class="summary-card" style="text-align: left;">
+            <span style="color:var(--blue); font-weight:bold;">⚖️ 目標再平衡 (Target %)</span>
+            <div style="display: flex; gap: 15px; margin: 15px 0;">
+                <div style="flex:1;"><small>股票</small><br><input type="number" id="target-s" value="40" style="width:100%" oninput="updateTargets()"></div>
+                <div style="flex:1;"><small>正2</small><br><input type="number" id="target-l" value="20" style="width:100%" oninput="updateTargets()"></div>
+                <div style="flex:1;"><small>債券</small><br><input type="number" id="target-b" value="40" style="width:100%" class="input-readonly" readonly></div>
             </div>
             <div class="ratio-bar-container">
                 <div id="stock-bar" class="part stock-part"></div>
@@ -79,50 +97,62 @@
             </div>
         </div>
         
-        <div class="tool-box" style="background:rgba(0,0,0,0.2); padding:15px; border-radius:15px; border:1px solid #444; margin-top:10px;">
-            <span style="color:var(--blue); font-weight:bold; font-size:0.9rem;">📈 自定義提領率：<input type="number" id="swr-rate" value="4" step="0.1" class="withdraw-input" oninput="calculate()"> %</span>
-            <div style="display: flex; gap: 15px; margin-top: 10px;">
-                <div style="flex:1;"><small style="color:#aaa;">預估年提領</small><br><b id="annual-withdraw" style="color:var(--green); font-size:1.1rem;">-</b></div>
-                <div style="flex:1;"><small style="color:#aaa;">預估月提領</small><br><b id="monthly-withdraw" style="color:var(--blue); font-size:1.3rem;">-</b></div>
+        <div class="summary-card" style="text-align: left;">
+            <span style="color:var(--blue); font-weight:bold;">📈 提領模擬 | 提領率：<input type="number" id="swr-rate" value="4" step="0.1" class="withdraw-input" oninput="calculate()">%</span>
+            <div style="display: flex; gap: 30px; margin-top: 20px;">
+                <div style="flex:1;"><span>預估年領取額</span><br><b id="annual-withdraw" style="color:var(--green);">-</b></div>
+                <div style="flex:1;"><span>預估月領取額</span><br><b id="monthly-withdraw" style="color:var(--blue);">-</b></div>
             </div>
+            <p style="font-size: 0.7rem; color: #555; margin-top: 15px;">根據當前總市值計算之預估領取額。</p>
         </div>
     </div>
 </div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyVqkIKdI1gC50Nd5MKNYGuSjN5flQF7q2E8_BRkFKhHjs3A7JkQrr_BjgnVK0qa8P0dg/exec";
-    const initialStocks = [{id:"00662", sym:"00662.TW"}, {id:"00670L", sym:"00670L.TW"}, {id:"00865B", sym:"00865B.TW"}, {id:"0050", sym:"0050.TW"}];
+    const initialStocks = [{id:"00662", sym:"00662.TW"}, {id:"00670L", sym:"00670L.TW"}, {id:"00865B", sym:"00865B.TW"}, {id:"0050", sym:"0050.TW"}, {id:"2330", sym:"2330.TW"}];
+    
     let displayStocks = JSON.parse(localStorage.getItem('displayStocks')) || initialStocks;
     let currentPrices = {};
-    let isPrivate = localStorage.getItem('privacy_v25') === 'true';
+    let isPrivate = localStorage.getItem('privacy_v26') === 'true';
 
     window.onload = () => { updateEyeUI(); renderTable(); calculate(); };
 
-    function togglePrivacy() { isPrivate = !isPrivate; localStorage.setItem('privacy_v25', isPrivate); updateEyeUI(); calculate(); }
+    function togglePrivacy() { isPrivate = !isPrivate; localStorage.setItem('privacy_v26', isPrivate); updateEyeUI(); calculate(); }
     function updateEyeUI() { document.getElementById('eye-icon').innerText = isPrivate ? '🙈' : '👁️'; }
-    function updateTargets() { let s = Number(document.getElementById('target-s').value) || 0, l = Number(document.getElementById('target-l').value) || 0; document.getElementById('target-b').value = 100 - s - l; calculate(); }
-    function save(id) { localStorage.setItem('sh_'+id, document.getElementById('sh_'+id).value); localStorage.setItem('co_'+id, document.getElementById('co_'+id).value); calculate(); }
-    
+    function updateTargets() {
+        let s = Number(document.getElementById('target-s').value) || 0;
+        let l = Number(document.getElementById('target-l').value) || 0;
+        document.getElementById('target-b').value = (100 - s - l).toFixed(0);
+        calculate();
+    }
+    function save(id) {
+        localStorage.setItem('sh_'+id, document.getElementById('sh_'+id).value);
+        localStorage.setItem('co_'+id, document.getElementById('co_'+id).value);
+        calculate();
+    }
     function renderTable() {
         let html = "";
         displayStocks.forEach(s => {
-            const sh = localStorage.getItem('sh_'+s.id) || "0", co = localStorage.getItem('co_'+s.id) || "0";
-            html += `<tr><td>${s.id}</td><td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td><td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td><td id="mkt_${s.id}">-</td><td id="price_${s.id}">-</td><td id="roi_${s.id}">-</td><td id="dd_${s.id}">-</td><td id="ytd_${s.id}">-</td><td id="rat_${s.id}">-</td><td id="reb_${s.id}">-</td></tr>`;
+            const sh = localStorage.getItem('sh_'+s.id) || "0";
+            const co = localStorage.getItem('co_'+s.id) || "0";
+            html += `<tr><td><b style="color:#fff">${s.id}</b></td><td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td><td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td><td id="mkt_${s.id}">-</td><td id="price_${s.id}" style="color:var(--blue)">-</td><td id="roi_${s.id}">-</td><td id="dd_${s.id}">-</td><td id="ytd_${s.id}">-</td><td id="rat_${s.id}">-</td><td id="reb_${s.id}">-</td></tr>`;
         });
         document.getElementById('list').innerHTML = html;
     }
 
     async function fetchAll() {
         const btn = document.getElementById('btn-f');
-        btn.disabled = true; btn.innerHTML = "📡 連線中...";
+        btn.disabled = true; btn.innerHTML = "📡 同步中，請稍候...";
         for (let s of displayStocks) {
             try {
-                const res = await fetch(`${API_URL}?symbol=${s.sym}&nocache=${Date.now()}`);
+                const res = await fetch(`${API_URL}?symbol=${s.sym}&cache=${Date.now()}`);
                 const data = await res.json();
                 if(data.price) currentPrices[s.id] = data;
-            } catch (e) {}
+            } catch (e) { console.error(e); }
         }
-        btn.innerHTML = "🚀 同步即時數據"; btn.disabled = false;
+        btn.innerHTML = "✅ 同步完成";
+        setTimeout(() => btn.innerHTML = "🚀 同步資產數據", 2000);
         calculate();
     }
 
@@ -130,27 +160,66 @@
         let tVal = 0, tCost = 0, tDayChange = 0, tDrawdown = 0;
         let sVal = 0, lVal = 0, bVal = 0;
         const swrRate = (Number(document.getElementById('swr-rate').value) || 4) / 100;
-        const ts = Number(document.getElementById('target-s').value)/100, tl = Number(document.getElementById('target-l').value)/100, tb = (100 - Number(document.getElementById('target-s').value) - Number(document.getElementById('target-l').value))/100;
+        const ts = Number(document.getElementById('target-s').value)/100, tl = Number(document.getElementById('target-l').value)/100, tb = (100 - (ts*100) - (tl*100))/100;
 
         displayStocks.forEach(s => {
-            const sh = Number(localStorage.getItem('sh_'+s.id)) || 0, p = currentPrices[s.id];
+            const sh = Number(localStorage.getItem('sh_'+s.id)) || 0;
+            const p = currentPrices[s.id];
             if (sh > 0 && p && p.price > 0) {
                 const m = sh * p.price; tVal += m;
                 if (s.id.includes('B')) bVal += m; else if (s.id.includes('L')) lVal += m; else sVal += m;
             }
         });
 
-        const diffS = (tVal * ts) - sVal, diffL = (tVal * tl) - lVal, diffB = (tVal * tb) - bVal;
-
         displayStocks.forEach(s => {
             const sh = Number(localStorage.getItem('sh_'+s.id)) || 0, co = Number(localStorage.getItem('co_'+s.id)) || 0, p = currentPrices[s.id];
             if (sh > 0 && p && p.price > 0) {
                 const m = sh * p.price; tCost += (sh * co);
-                
-                // 【今日變動優化】
-                let cur = parseFloat(p.price);
-                let prev = parseFloat(p.prevClose) || cur;
-                // 如果是盤後（4點後），嘗試檢查當前價是否與昨收相同，若相同則代表數據源未跳動
-                tDayChange += (cur - prev) * sh;
+                let pc = parseFloat(p.prevClose) || p.price;
+                tDayChange += (p.price - pc) * sh;
+                const roi = ((p.price - co) / co * 100).toFixed(2);
+                const rat = (m / tVal * 100).toFixed(1);
+                let highMark = parseFloat(p.high) || p.price;
+                const ddValue = highMark > 0 ? ((p.price - highMark) / highMark * 100).toFixed(2) : "0.00";
+                tDrawdown += (m / tVal) * parseFloat(ddValue);
+                let reb = s.id.includes('B') ? (tVal*tb-bVal)*(m/bVal||1) : (s.id.includes('L') ? (tVal*tl-lVal)*(m/lVal||1) : (tVal*ts-sVal)*(m/sVal||1));
 
-                const roi = ((
+                document.getElementById('mkt_'+s.id).innerText = Math.round(m).toLocaleString();
+                document.getElementById('mkt_'+s.id).className = isPrivate ? 'privacy-mask' : '';
+                document.getElementById('price_'+s.id).innerText = p.price;
+                document.getElementById('roi_'+s.id).innerHTML = `<span style="color:${p.price>=co?'var(--green)':'var(--red)'}">${roi}%</span>`;
+                document.getElementById('rat_'+s.id).innerText = rat + "%";
+                document.getElementById('dd_'+s.id).innerText = ddValue + "%";
+                document.getElementById('ytd_'+s.id).innerHTML = `<span style="color:${p.ytdOpen>0?(p.price>=p.ytdOpen?'var(--green)':'var(--red)'):''}">${p.ytdOpen > 0 ? ((p.price-p.ytdOpen)/p.ytdOpen*100).toFixed(2)+"%" : "-"}</span>`;
+                
+                const rEl = document.getElementById('reb_'+s.id);
+                rEl.innerHTML = `<span style="color:${reb>=0?'var(--green)':'var(--red)'}; font-size:0.85rem;">${reb>=0?'加碼':'減碼'}<br>${Math.abs(Math.round(reb)).toLocaleString()}</span>`;
+                rEl.className = isPrivate ? 'privacy-mask' : '';
+            }
+        });
+
+        const pl = tVal - tCost, pPct = tCost > 0 ? (pl / tCost * 100).toFixed(2) : 0;
+        document.getElementById('summary-grid').innerHTML = `
+            <div class="summary-card"><span>資產總市值</span><br><b class="${isPrivate?'privacy-mask':''}" style="color:var(--blue)">${Math.round(tVal).toLocaleString()}</b></div>
+            <div class="summary-card"><span>今日損益跳動</span><br><b class="${isPrivate?'privacy-mask':''}" style="color:${tDayChange>=0?'var(--green)':'var(--red)'}">${tDayChange>=0?'+':''}${Math.round(tDayChange).toLocaleString()}</b></div>
+            <div class="summary-card" style="border:1px solid ${pl>=0?'var(--green)':'var(--red)'}"><span>累積總損益</span><br><b class="${isPrivate?'privacy-mask':''}" style="color:${pl>=0?'var(--green)':'var(--red)'}">${Math.round(pl).toLocaleString()} (${pPct}%)</b></div>
+            <div class="summary-card" style="border:1px solid var(--orange)"><span>風險溫度(總回撤)</span><br><b style="color:var(--red)">${tDrawdown.toFixed(2)}%</b></div>`;
+
+        const ann = tVal * swrRate;
+        document.getElementById('annual-withdraw').innerText = "NT$ " + Math.round(ann).toLocaleString();
+        document.getElementById('monthly-withdraw').innerText = "NT$ " + Math.round(ann/12).toLocaleString();
+        document.getElementById('annual-withdraw').className = isPrivate ? 'privacy-mask' : '';
+        document.getElementById('monthly-withdraw').className = isPrivate ? 'privacy-mask' : '';
+
+        if (tVal > 0) {
+            const sp = (sVal/tVal*100).toFixed(1), lp = (lVal/tVal*100).toFixed(1), bp = (bVal/tVal*100).toFixed(1);
+            const sb = document.getElementById('stock-bar'), lb = document.getElementById('lever-bar'), bb = document.getElementById('bond-bar');
+            sb.style.width = sp+'%'; sb.innerText = `股票 ${sp}%`;
+            lb.style.width = lp+'%'; lb.innerText = `正2 ${lp}%`;
+            bb.style.width = bp+'%'; bb.innerText = `債券 ${bp}%`;
+        }
+    }
+    function sortTable(type) { displayStocks.sort((a, b) => { const getV = (s) => { const sh = Number(localStorage.getItem('sh_'+s.id))||0; const p = currentPrices[s.id]?.price||0; if(type==='market') return sh*p; return s.id; }; return getV(b) > getV(a) ? 1 : -1; }); renderTable(); calculate(); }
+</script>
+</body>
+</html>
