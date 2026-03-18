@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V41.0</title>
+    <title>退休資產戰情室 V42.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
         body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 12px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 1300px; background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 1px solid #333; box-sizing: border-box; overflow: hidden; }
+        .container { width: 100%; max-width: 1400px; background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 1px solid #333; box-sizing: border-box; overflow: hidden; }
         
         .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; width: 100%; }
         h2 { margin: 0; color: var(--green); font-weight: 700; font-size: 1.6rem; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
@@ -97,7 +97,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V41.0</h2>
+        <h2>📊 綜合退休戰情室 V42.0</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
             <label class="icon-btn" title="還原資料" style="margin: 0;">
@@ -152,6 +152,7 @@
                     <th>持有股數</th>
                     <th>平均成本</th>
                     <th onclick="sortTable('market')">目前市值 ⇅</th>
+                    <th onclick="sortTable('pnl')">未實現損益 ⇅</th>
                     <th>最新股價 <br><small style="color:#888; font-weight:normal;">(含昨收比對)</small></th>
                     <th onclick="sortTable('roi')">報酬率 ⇅</th>
                     <th>回撤 <br><small style="color:#888; font-weight:normal;">(含最高價比對)</small></th>
@@ -192,9 +193,23 @@
 </div>
 
 <script>
-    // 您的專屬 API 網址，已經直接填好，絕對不會錯！
     const API_URL = "https://script.google.com/macros/s/AKfycbzIOppgygYd3sWBSjJoOwEZFjiSZ-nAgneD7sqALdItKarLxv9DobEoO_3k35tVmu4EHA/exec";
     
+    // ✨ 內建台股防呆字典，就算後台沒發佈好，前端照樣顯示正確名稱！
+    const fallbackNames = {
+        "00662.TW": "富邦NASDAQ",
+        "00670L.TW": "富邦NASDAQ正2",
+        "00865B.TW": "國泰20年美債",
+        "0050.TW": "元大台灣50",
+        "006208.TW": "富邦台50",
+        "0056.TW": "元大高股息",
+        "00631L.TW": "元大台灣50正2",
+        "00663L.TW": "國泰台灣加權正2",
+        "00675L.TW": "富邦臺灣加權正2",
+        "2330.TW": "台積電",
+        "6689.TW": "伊雲谷"
+    };
+
     const initialStocks = [
         { id: "00662", sym: "00662.TW" }, { id: "00670L", sym: "00670L.TW" }, { id: "00865B", sym: "00865B.TW" },
         { id: "0050", sym: "0050.TW" }, { id: "006208", sym: "006208.TW" }, { id: "0056", sym: "0056.TW" },
@@ -233,8 +248,6 @@
             updateTargets(); 
             updateEyeUI(); 
             renderTable(); 
-            
-            // ✨ 一打開網頁立刻觸發極速自動同步！
             fetchAll(); 
         } catch(e) { console.error(e); }
     };
@@ -368,8 +381,10 @@
             if (!isEditMode && (Number(sh) === 0 || sh === "")) return;
             holdingCount++;
             
-            // ✨ 名稱顯示邏輯
-            let nameHtml = s.name ? `<br><span style="font-size:0.75rem; color:#aaa; font-weight:normal;">${s.name}</span>` : '';
+            // ✨ 名稱顯示防呆機制 (後台有抓到就用，沒抓到就用前端內建字典)
+            let displayName = s.name || fallbackNames[s.sym] || "";
+            let nameHtml = displayName ? `<br><span style="font-size:0.75rem; color:#aaa; font-weight:normal;">${displayName}</span>` : '';
+            
             let idDisplay = isEditMode 
                 ? `<div style="display:flex; align-items:center; justify-content:center;"><span class="btn-del" onclick="deleteStock('${s.id}')" title="刪除標的">✖</span><div style="line-height:1.3;"><b style="color:#fff">${s.id}</b>${nameHtml}</div></div>` 
                 : `<div style="line-height:1.3;"><b style="color:#fff">${s.id}</b>${nameHtml}</div>`;
@@ -387,7 +402,7 @@
                 <td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td>
                 <td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td>
                 <td id="mkt_${s.id}">-</td>
-                <td id="price_${s.id}" style="color:var(--blue)">-</td>
+                <td id="pnl_${s.id}">-</td> <td id="price_${s.id}" style="color:var(--blue)">-</td>
                 <td id="roi_${s.id}">-</td>
                 <td id="dd_cell_${s.id}">${ddDisplay}</td>
                 <td id="ytd_${s.id}">-</td>
@@ -397,7 +412,7 @@
         });
 
         if (holdingCount === 0 && !isEditMode) {
-            html = `<tr><td colspan="10" class="empty-state">📦 庫存空空如也，請點擊右上方「⚙️ 管理股票池」開始買進建倉。</td></tr>`;
+            html = `<tr><td colspan="11" class="empty-state">📦 庫存空空如也，請點擊右上方「⚙️ 管理股票池」開始買進建倉。</td></tr>`;
         }
         document.getElementById('list').innerHTML = html;
     }
@@ -415,7 +430,6 @@
         } catch (e) { document.getElementById('usd-twd-val').innerText = "暫無數據"; }
     }
 
-    // ✨ 極速載入機制
     async function fetchAll() {
         const btn = document.getElementById('btn-f');
         btn.disabled = true; btn.innerHTML = "📡 極速載入中...";
@@ -491,10 +505,14 @@
                 
                 tDayChange += (p.price - pc) * sh;
                 
+                // ✨ 計算未實現損益
+                let pnlValue = (p.price - co) * sh;
+                let pnlColor = pnlValue >= 0 ? 'var(--green)' : 'var(--red)';
+                let pnlDisplay = pnlValue >= 0 ? `+${Math.round(pnlValue).toLocaleString()}` : Math.round(pnlValue).toLocaleString();
+                
                 const roi = ((p.price - co) / co * 100).toFixed(2);
                 const rat = (m / tVal * 100).toFixed(1);
                 
-                // ✨ 自訂高價校正邏輯
                 let chStr = localStorage.getItem('ch_'+s.id);
                 let ch = parseFloat(chStr);
                 let highMark = (ch > 0) ? ch : (parseFloat(p.high) || p.price);
@@ -511,13 +529,19 @@
                 mktEl.innerText = Math.round(m).toLocaleString();
                 mktEl.className = isPrivate ? 'privacy-mask' : '';
                 
+                // ✨ 寫入未實現損益畫面
+                let pnlEl = document.getElementById('pnl_'+s.id);
+                if(pnlEl) {
+                    pnlEl.innerHTML = `<span style="color:${pnlColor}; font-weight:bold;">${pnlDisplay}</span>`;
+                    pnlEl.className = isPrivate ? 'privacy-mask' : '';
+                }
+
                 const priceEl = document.getElementById('price_'+s.id);
                 if(priceEl) priceEl.innerHTML = `<span style="font-size:1.05rem;" class="${isFreshFetch ? 'data-flash' : ''}">${fmtP(p.price)}</span><br><span style="font-size:0.75rem; color:#888;">昨收: ${pcRaw}</span>`;
                 
                 let roiEl = document.getElementById('roi_'+s.id);
                 if(roiEl) roiEl.innerHTML = `<span style="color:${p.price>=co?'var(--green)':'var(--red)'}">${roi}%</span>`;
                 
-                // ✨ 寫入動態回撤與自訂高價標示
                 let ddValEl = document.getElementById('dd_val_'+s.id);
                 if(ddValEl) ddValEl.innerHTML = `<span style="font-size:1.05rem; color:${ddValue<0?'var(--red)':'#fff'};">${ddValue}%</span>`;
                 if (!isEditMode) {
@@ -594,7 +618,26 @@
         }
     }
 
-    function sortTable(type) { displayStocks.sort((a, b) => { const getV = (s) => { const sh = Number(localStorage.getItem('sh_'+s.id))||0; const p = currentPrices[s.id]?.price||0; if(type==='market') return sh*p; return s.id; }; return getV(b) > getV(a) ? 1 : -1; }); renderTable(); calculate(); }
+    // ✨ 排序功能加入「損益排序 (pnl)」
+    function sortTable(type) { 
+        displayStocks.sort((a, b) => { 
+            const shA = Number(localStorage.getItem('sh_'+a.id))||0; 
+            const coA = Number(localStorage.getItem('co_'+a.id))||0;
+            const pA = currentPrices[a.id]?.price||0; 
+            
+            const shB = Number(localStorage.getItem('sh_'+b.id))||0; 
+            const coB = Number(localStorage.getItem('co_'+b.id))||0;
+            const pB = currentPrices[b.id]?.price||0; 
+            
+            if(type==='market') return (shB*pB) - (shA*pA); 
+            if(type==='pnl') return ((pB-coB)*shB) - ((pA-coA)*shA); 
+            if(type==='roi') return (coB>0?(pB-coB)/coB:0) - (coA>0?(pA-coA)/coA:0); 
+            if(type==='ratio') return (shB*pB) - (shA*pA); 
+            return a.id.localeCompare(b.id); 
+        }); 
+        renderTable(); 
+        calculate(); 
+    }
 </script>
 </body>
 </html>
