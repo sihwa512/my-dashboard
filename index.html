@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V37.0</title>
+    <title>退休資產戰情室 V38.1</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
@@ -164,7 +164,7 @@
         </table>
     </div>
 
-    <button class="btn-fetch" onclick="fetchAll()" id="btn-f">🚀 同步資產數據</button>
+    <button class="btn-fetch" onclick="fetchAll()" id="btn-f">🚀 手動極速同步</button>
 
     <div class="summary-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
         <div class="summary-card" style="text-align: left; border: 1px solid var(--blue); box-shadow: 0 0 15px rgba(0, 212, 255, 0.05);">
@@ -192,7 +192,7 @@
 </div>
 
 <script>
-    // 您的專屬 Yahoo API 引擎
+    // 您專屬的 API 網址已經設定完畢！
     const API_URL = "https://script.google.com/macros/s/AKfycbzIOppgygYd3sWBSjJoOwEZFjiSZ-nAgneD7sqALdItKarLxv9DobEoO_3k35tVmu4EHA/exec";
     
     const initialStocks = [
@@ -233,7 +233,9 @@
             updateTargets(); 
             updateEyeUI(); 
             renderTable(); 
-            fetchUSD(); 
+            
+            // ✨ 一打開網頁立刻觸發極速自動同步！
+            fetchAll(); 
         } catch(e) { console.error(e); }
     };
 
@@ -374,19 +376,26 @@
         } catch (e) { document.getElementById('usd-twd-val').innerText = "暫無數據"; }
     }
 
+    // ✨ 極速載入機制 (Promise.all)
     async function fetchAll() {
         const btn = document.getElementById('btn-f');
-        btn.disabled = true; btn.innerHTML = "📡 同步中，請稍候...";
+        btn.disabled = true; btn.innerHTML = "📡 極速載入中...";
+        
         fetchUSD(); 
-        for (let s of displayStocks) {
+        
+        // 讓所有股票請求「同時」發出，縮短等待時間！
+        const fetchPromises = displayStocks.map(async (s) => {
             try {
                 const res = await fetch(`${API_URL}?symbol=${s.sym}&cache=${Date.now()}`);
                 const data = await res.json();
                 if(data.price) currentPrices[s.id] = data;
             } catch (e) {}
-        }
+        });
+
+        await Promise.all(fetchPromises); 
+        
         btn.innerHTML = "✅ 同步完成";
-        setTimeout(() => btn.innerHTML = "🚀 同步資產數據", 2000);
+        setTimeout(() => btn.innerHTML = "🚀 手動極速同步", 2000);
         calculate(true); 
     }
 
@@ -435,12 +444,10 @@
                 const roi = ((p.price - co) / co * 100).toFixed(2);
                 const rat = (m / tVal * 100).toFixed(1);
                 
-                // 計算回撤 (含最高價)
                 let highMark = parseFloat(p.high) || p.price;
                 const ddValue = highMark > 0 ? ((p.price - highMark) / highMark * 100).toFixed(2) : "0.00";
                 tDrawdown += (m / tVal) * parseFloat(ddValue);
                 
-                // 計算 YTD (含年初價)
                 let ytdOpenNum = parseFloat(p.ytdOpen);
                 let ytdValue = ytdOpenNum > 0 ? ((p.price - ytdOpenNum) / ytdOpenNum * 100).toFixed(2) : "0.00";
                 let ytdColor = ytdOpenNum > 0 ? (ytdValue >= 0 ? 'var(--green)' : 'var(--red)') : '#888';
@@ -456,10 +463,8 @@
                 
                 document.getElementById('roi_'+s.id).innerHTML = `<span style="color:${p.price>=co?'var(--green)':'var(--red)'}">${roi}%</span>`;
                 
-                // 寫入回撤
                 document.getElementById('dd_'+s.id).innerHTML = `<span style="font-size:1.05rem;">${ddValue}%</span><br><span style="font-size:0.75rem; color:#888;">最高: ${fmtP(highMark)}</span>`;
                 
-                // 寫入 YTD
                 document.getElementById('ytd_'+s.id).innerHTML = `<span style="font-size:1.05rem; color:${ytdColor}">${ytdDisplay}</span><br><span style="font-size:0.75rem; color:#888;">年初: ${fmtP(p.ytdOpen)}</span>`;
                 
                 document.getElementById('rat_'+s.id).innerText = rat + "%";
