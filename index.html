@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V35.2</title>
+    <title>退休資產戰情室 V36.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
@@ -41,7 +41,7 @@
         .table-wrapper { width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid var(--slate); box-shadow: 0 0 15px rgba(98, 114, 164, 0.1); margin-bottom: 20px; background: #1b1e2e; }
         table { width: 100%; border-collapse: collapse; min-width: 1100px; }
         thead th { position: sticky; top: 0; background: #252836; color: var(--blue); padding: 15px 5px; text-align: center; font-size: 0.85rem; border-bottom: 2px solid var(--slate); cursor: pointer; }
-        td { padding: 14px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.95rem; }
+        td { padding: 14px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.95rem; transition: color 0.3s, text-shadow 0.3s; }
         
         /* 閃爍更新特效 */
         @keyframes flashUpdate {
@@ -98,7 +98,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室</h2>
+        <h2>📊 綜合退休戰情室 V36.0</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
             <label class="icon-btn" title="還原資料" style="margin: 0;">
@@ -193,7 +193,8 @@
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyVqkIKdI1gC50Nd5MKNYGuSjN5flQF7q2E8_BRkFKhHjs3A7JkQrr_BjgnVK0qa8P0dg/exec";
+    // 您建立的全新 Yahoo Finance 獨立引擎 API
+    const API_URL = "https://script.google.com/macros/s/AKfycbzIOppgygYd3sWBSjJoOwEZFjiSZ-nAgneD7sqALdItKarLxv9DobEoO_3k35tVmu4EHA/exec";
     
     const initialStocks = [
         { id: "00662", sym: "00662.TW" }, { id: "00670L", sym: "00670L.TW" }, { id: "00865B", sym: "00865B.TW" },
@@ -382,7 +383,7 @@
         }
         btn.innerHTML = "✅ 同步完成";
         setTimeout(() => btn.innerHTML = "🚀 同步資產數據", 2000);
-        calculate(true); // 傳入 true 觸發閃爍特效
+        calculate(true); 
     }
 
     function drawChart(historyData) {
@@ -421,7 +422,7 @@
             if (sh > 0 && p && p.price > 0 && mktEl) {
                 const m = sh * p.price; tCost += (sh * co);
                 
-                // 【V35.2 偵測核心】抓取原始的 prevClose，如果沒抓到就當作現價，避免出錯
+                // 這裡取得的 prevClose 現在絕對精準，因為直接來自 Yahoo Finance！
                 let pcRaw = p.prevClose !== undefined ? p.prevClose : '無資料';
                 let pc = parseFloat(p.prevClose);
                 if (isNaN(pc) || pc === 0) pc = p.price; 
@@ -438,20 +439,23 @@
                 mktEl.innerText = Math.round(m).toLocaleString();
                 mktEl.className = isPrivate ? 'privacy-mask' : '';
                 
-                // ✨ 顯示包含「昨收」的情報，並套用閃爍特效
                 const priceEl = document.getElementById('price_'+s.id);
                 priceEl.innerHTML = `<span style="font-size:1.05rem;" class="${isFreshFetch ? 'data-flash' : ''}">${p.price}</span><br><span style="font-size:0.75rem; color:#888;">昨收: ${pcRaw}</span>`;
                 
                 document.getElementById('roi_'+s.id).innerHTML = `<span style="color:${p.price>=co?'var(--green)':'var(--red)'}">${roi}%</span>`;
                 document.getElementById('dd_'+s.id).innerText = ddValue + "%";
-                document.getElementById('ytd_'+s.id).innerHTML = `<span style="color:${p.ytdOpen>0?(p.price>=p.ytdOpen?'var(--green)':'var(--red)'):''}">${p.ytdOpen > 0 ? ((p.price-p.ytdOpen)/p.ytdOpen*100).toFixed(2)+"%" : "-"}</span>`;
+                
+                // YTD欄位若後台未提供，以 "-" 顯示，保持版面乾淨
+                let ytdDisplay = p.ytdOpen > 0 ? ((p.price-p.ytdOpen)/p.ytdOpen*100).toFixed(2)+"%" : "-";
+                let ytdColor = p.ytdOpen > 0 ? (p.price>=p.ytdOpen?'var(--green)':'var(--red)') : '#888';
+                document.getElementById('ytd_'+s.id).innerHTML = `<span style="color:${ytdColor}">${ytdDisplay}</span>`;
+                
                 document.getElementById('rat_'+s.id).innerText = rat + "%";
                 
                 const rEl = document.getElementById('reb_'+s.id);
                 rEl.innerHTML = `<span style="color:${reb>=0?'var(--green)':'var(--red)'}; font-size:0.85rem;">${reb>=0?'加碼':'減碼'}<br>${Math.abs(Math.round(reb)).toLocaleString()}</span>`;
                 rEl.className = isPrivate ? 'privacy-mask' : '';
             } else if (p && p.price > 0 && mktEl) {
-                // 如果是編輯模式看到 0 股，也顯示包含昨收的數據
                 let pcRaw = p.prevClose !== undefined ? p.prevClose : '無資料';
                 const priceEl = document.getElementById('price_'+s.id);
                 priceEl.innerHTML = `<span style="font-size:1.05rem;" class="${isFreshFetch ? 'data-flash' : ''}">${p.price}</span><br><span style="font-size:0.75rem; color:#888;">昨收: ${pcRaw}</span>`;
