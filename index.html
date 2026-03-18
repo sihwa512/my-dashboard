@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V40.0</title>
+    <title>退休資產戰情室 V41.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
@@ -97,7 +97,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V40.0</h2>
+        <h2>📊 綜合退休戰情室 V41.0</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
             <label class="icon-btn" title="還原資料" style="margin: 0;">
@@ -192,7 +192,7 @@
 </div>
 
 <script>
-    // 您專屬的 API 網址
+    // 您的專屬 API 網址，已經直接填好，絕對不會錯！
     const API_URL = "https://script.google.com/macros/s/AKfycbzIOppgygYd3sWBSjJoOwEZFjiSZ-nAgneD7sqALdItKarLxv9DobEoO_3k35tVmu4EHA/exec";
     
     const initialStocks = [
@@ -234,7 +234,7 @@
             updateEyeUI(); 
             renderTable(); 
             
-            // ✨ 一開網頁極速自動同步！
+            // ✨ 一打開網頁立刻觸發極速自動同步！
             fetchAll(); 
         } catch(e) { console.error(e); }
     };
@@ -308,7 +308,17 @@
         
         fetch(`${API_URL}?symbol=${sym}&cache=${Date.now()}`)
             .then(res => res.json())
-            .then(data => { if(data.price) currentPrices[val] = data; calculate(); })
+            .then(data => { 
+                if(data.price) {
+                    currentPrices[val] = data; 
+                    if(data.name) {
+                        let st = displayStocks.find(x => x.id === val);
+                        if(st) { st.name = data.name; localStorage.setItem('displayStocks_v28', JSON.stringify(displayStocks)); }
+                    }
+                    renderTable(); 
+                    calculate(); 
+                }
+            })
             .catch(e => console.log("抓取失敗", e));
     }
 
@@ -318,7 +328,7 @@
         localStorage.setItem('displayStocks_v28', JSON.stringify(displayStocks));
         localStorage.removeItem('sh_'+id);
         localStorage.removeItem('co_'+id);
-        localStorage.removeItem('ch_'+id); // 連同自訂高價一起刪除
+        localStorage.removeItem('ch_'+id);
         renderTable();
         calculate();
     }
@@ -344,7 +354,6 @@
         calculate(); 
     }
 
-    // ✨ 儲存自訂高價 (不觸發 focus 遺失)
     function saveCH(id) {
         localStorage.setItem('ch_'+id, document.getElementById('ch_'+id).value);
         calculate();
@@ -359,9 +368,12 @@
             if (!isEditMode && (Number(sh) === 0 || sh === "")) return;
             holdingCount++;
             
-            let idDisplay = isEditMode ? `<div style="display:flex; align-items:center; justify-content:center;"><span class="btn-del" onclick="deleteStock('${s.id}')" title="刪除標的">✖</span><b style="color:#fff">${s.id}</b></div>` : `<b style="color:#fff">${s.id}</b>`;
+            // ✨ 名稱顯示邏輯
+            let nameHtml = s.name ? `<br><span style="font-size:0.75rem; color:#aaa; font-weight:normal;">${s.name}</span>` : '';
+            let idDisplay = isEditMode 
+                ? `<div style="display:flex; align-items:center; justify-content:center;"><span class="btn-del" onclick="deleteStock('${s.id}')" title="刪除標的">✖</span><div style="line-height:1.3;"><b style="color:#fff">${s.id}</b>${nameHtml}</div></div>` 
+                : `<div style="line-height:1.3;"><b style="color:#fff">${s.id}</b>${nameHtml}</div>`;
             
-            // ✨ 根據編輯模式，切換回撤欄位顯示：純文字 or 橘色自訂輸入框
             let ch = localStorage.getItem('ch_'+s.id) || "";
             let ddDisplay = `<div id="dd_val_${s.id}">-</div>`;
             if (isEditMode) {
@@ -403,23 +415,35 @@
         } catch (e) { document.getElementById('usd-twd-val').innerText = "暫無數據"; }
     }
 
-    // ✨ 極速載入並行處理
+    // ✨ 極速載入機制
     async function fetchAll() {
         const btn = document.getElementById('btn-f');
         btn.disabled = true; btn.innerHTML = "📡 極速載入中...";
         
         fetchUSD(); 
         
+        let nameUpdated = false; 
         const fetchPromises = displayStocks.map(async (s) => {
             try {
                 const res = await fetch(`${API_URL}?symbol=${s.sym}&cache=${Date.now()}`);
                 const data = await res.json();
-                if(data.price) currentPrices[s.id] = data;
+                if(data.price) {
+                    currentPrices[s.id] = data;
+                    if(data.name && s.name !== data.name) {
+                        s.name = data.name;
+                        nameUpdated = true;
+                    }
+                }
             } catch (e) {}
         });
 
         await Promise.all(fetchPromises); 
         
+        if (nameUpdated) {
+            localStorage.setItem('displayStocks_v28', JSON.stringify(displayStocks));
+            renderTable();
+        }
+
         btn.innerHTML = "✅ 同步完成";
         setTimeout(() => btn.innerHTML = "🚀 手動極速同步", 2000);
         calculate(true); 
