@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V38.1</title>
+    <title>退休資產戰情室 V39.1</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
@@ -41,7 +41,7 @@
         .table-wrapper { width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid var(--slate); box-shadow: 0 0 15px rgba(98, 114, 164, 0.1); margin-bottom: 20px; background: #1b1e2e; }
         table { width: 100%; border-collapse: collapse; min-width: 1100px; }
         thead th { position: sticky; top: 0; background: #252836; color: var(--blue); padding: 15px 5px; text-align: center; font-size: 0.85rem; border-bottom: 2px solid var(--slate); cursor: pointer; }
-        td { padding: 14px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.95rem; }
+        td { padding: 14px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.95rem; transition: color 0.3s, text-shadow 0.3s; }
         
         @keyframes flashUpdate {
             0% { color: #ffffff; text-shadow: 0 0 10px #ffffff; transform: scale(1.05); }
@@ -97,7 +97,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室</h2>
+        <h2>📊 綜合退休戰情室 V39.1</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
             <label class="icon-btn" title="還原資料" style="margin: 0;">
@@ -154,7 +154,7 @@
                     <th onclick="sortTable('market')">目前市值 ⇅</th>
                     <th>最新股價 <br><small style="color:#888; font-weight:normal;">(含昨收比對)</small></th>
                     <th onclick="sortTable('roi')">報酬率 ⇅</th>
-                    <th>回撤 <br><small style="color:#888; font-weight:normal;">(含最高價比對)</small></th>
+                    <th>回撤 <br><small style="color:#888; font-weight:normal;">(含歷史高價)</small></th>
                     <th>YTD <br><small style="color:#888; font-weight:normal;">(含年初價格)</small></th>
                     <th onclick="sortTable('ratio')">佔比 ⇅</th>
                     <th>再平衡建議</th>
@@ -192,7 +192,7 @@
 </div>
 
 <script>
-    // 您專屬的 API 網址已經設定完畢！
+    // 您專屬的 API 網址
     const API_URL = "https://script.google.com/macros/s/AKfycbzIOppgygYd3sWBSjJoOwEZFjiSZ-nAgneD7sqALdItKarLxv9DobEoO_3k35tVmu4EHA/exec";
     
     const initialStocks = [
@@ -383,7 +383,6 @@
         
         fetchUSD(); 
         
-        // 讓所有股票請求「同時」發出，縮短等待時間！
         const fetchPromises = displayStocks.map(async (s) => {
             try {
                 const res = await fetch(`${API_URL}?symbol=${s.sym}&cache=${Date.now()}`);
@@ -444,6 +443,7 @@
                 const roi = ((p.price - co) / co * 100).toFixed(2);
                 const rat = (m / tVal * 100).toFixed(1);
                 
+                // ✨ 這裡的 p.high 現在已經是從後台接收到的「歷史高價」了
                 let highMark = parseFloat(p.high) || p.price;
                 const ddValue = highMark > 0 ? ((p.price - highMark) / highMark * 100).toFixed(2) : "0.00";
                 tDrawdown += (m / tVal) * parseFloat(ddValue);
