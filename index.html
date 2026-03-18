@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V35.1</title>
+    <title>退休資產戰情室 V35.2</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
@@ -41,14 +41,14 @@
         .table-wrapper { width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid var(--slate); box-shadow: 0 0 15px rgba(98, 114, 164, 0.1); margin-bottom: 20px; background: #1b1e2e; }
         table { width: 100%; border-collapse: collapse; min-width: 1100px; }
         thead th { position: sticky; top: 0; background: #252836; color: var(--blue); padding: 15px 5px; text-align: center; font-size: 0.85rem; border-bottom: 2px solid var(--slate); cursor: pointer; }
-        td { padding: 14px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.95rem; transition: color 0.3s, text-shadow 0.3s; }
+        td { padding: 14px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.95rem; }
         
-        /* ✨ 新增：數據刷新時的白光閃爍特效 */
+        /* 閃爍更新特效 */
         @keyframes flashUpdate {
-            0% { color: #ffffff; text-shadow: 0 0 15px #ffffff, 0 0 25px var(--blue); transform: scale(1.05); }
+            0% { color: #ffffff; text-shadow: 0 0 10px #ffffff; transform: scale(1.05); }
             100% { color: var(--blue); text-shadow: none; transform: scale(1); }
         }
-        .data-flash { animation: flashUpdate 1.2s ease-out; }
+        .data-flash { display: inline-block; animation: flashUpdate 1s ease-out; }
 
         input[type="number"] { box-sizing: border-box; background: #252836; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 8px; width: 90px; text-align: center; font-size: 1rem; outline: none; }
         input[type="number"]:focus { border-color: var(--orange); }
@@ -142,7 +142,7 @@
         <span style="color:var(--orange); font-weight:bold; font-size:0.9rem;">➕ 新增自選標的：</span>
         <input type="text" id="new-stock-id" class="add-input" placeholder="輸入代號 (例: 00878)" onkeypress="if(event.key === 'Enter') addNewStock()">
         <button class="btn-add" onclick="addNewStock()">新增入池</button>
-        <span style="font-size:0.75rem; color:#888;">*若為台股自動補 .TW</span>
+        <span style="font-size:0.75rem; color:#888;">*若為台股會自動補上 .TW</span>
     </div>
 
     <div class="table-wrapper">
@@ -153,7 +153,7 @@
                     <th>持有股數</th>
                     <th>平均成本</th>
                     <th onclick="sortTable('market')">目前市值 ⇅</th>
-                    <th>最新股價</th>
+                    <th>最新股價 <br><small style="color:#888; font-weight:normal;">(含昨收比對)</small></th>
                     <th onclick="sortTable('roi')">報酬率 ⇅</th>
                     <th>回撤</th>
                     <th>YTD</th>
@@ -346,6 +346,7 @@
             holdingCount++;
             
             let idDisplay = isEditMode ? `<div style="display:flex; align-items:center; justify-content:center;"><span class="btn-del" onclick="deleteStock('${s.id}')" title="刪除標的">✖</span><b style="color:#fff">${s.id}</b></div>` : `<b style="color:#fff">${s.id}</b>`;
+            
             html += `<tr><td>${idDisplay}</td><td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td><td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td><td id="mkt_${s.id}">-</td><td id="price_${s.id}" style="color:var(--blue)">-</td><td id="roi_${s.id}">-</td><td id="dd_${s.id}">-</td><td id="ytd_${s.id}">-</td><td id="rat_${s.id}">-</td><td id="reb_${s.id}">-</td></tr>`;
         });
 
@@ -381,7 +382,7 @@
         }
         btn.innerHTML = "✅ 同步完成";
         setTimeout(() => btn.innerHTML = "🚀 同步資產數據", 2000);
-        calculate(true); // 傳入 true 代表是手動觸發抓取，允許播放閃爍動畫
+        calculate(true); // 傳入 true 觸發閃爍特效
     }
 
     function drawChart(historyData) {
@@ -419,8 +420,14 @@
             
             if (sh > 0 && p && p.price > 0 && mktEl) {
                 const m = sh * p.price; tCost += (sh * co);
-                let pc = parseFloat(p.prevClose) || p.price;
+                
+                // 【V35.2 偵測核心】抓取原始的 prevClose，如果沒抓到就當作現價，避免出錯
+                let pcRaw = p.prevClose !== undefined ? p.prevClose : '無資料';
+                let pc = parseFloat(p.prevClose);
+                if (isNaN(pc) || pc === 0) pc = p.price; 
+                
                 tDayChange += (p.price - pc) * sh;
+                
                 const roi = ((p.price - co) / co * 100).toFixed(2);
                 const rat = (m / tVal * 100).toFixed(1);
                 let highMark = parseFloat(p.high) || p.price;
@@ -431,15 +438,10 @@
                 mktEl.innerText = Math.round(m).toLocaleString();
                 mktEl.className = isPrivate ? 'privacy-mask' : '';
                 
-                // ✨ 股價更新閃爍特效
+                // ✨ 顯示包含「昨收」的情報，並套用閃爍特效
                 const priceEl = document.getElementById('price_'+s.id);
-                priceEl.innerText = p.price;
-                if (isFreshFetch) {
-                    priceEl.classList.remove('data-flash');
-                    void priceEl.offsetWidth; // 觸發重繪
-                    priceEl.classList.add('data-flash');
-                }
-
+                priceEl.innerHTML = `<span style="font-size:1.05rem;" class="${isFreshFetch ? 'data-flash' : ''}">${p.price}</span><br><span style="font-size:0.75rem; color:#888;">昨收: ${pcRaw}</span>`;
+                
                 document.getElementById('roi_'+s.id).innerHTML = `<span style="color:${p.price>=co?'var(--green)':'var(--red)'}">${roi}%</span>`;
                 document.getElementById('dd_'+s.id).innerText = ddValue + "%";
                 document.getElementById('ytd_'+s.id).innerHTML = `<span style="color:${p.ytdOpen>0?(p.price>=p.ytdOpen?'var(--green)':'var(--red)'):''}">${p.ytdOpen > 0 ? ((p.price-p.ytdOpen)/p.ytdOpen*100).toFixed(2)+"%" : "-"}</span>`;
@@ -449,13 +451,10 @@
                 rEl.innerHTML = `<span style="color:${reb>=0?'var(--green)':'var(--red)'}; font-size:0.85rem;">${reb>=0?'加碼':'減碼'}<br>${Math.abs(Math.round(reb)).toLocaleString()}</span>`;
                 rEl.className = isPrivate ? 'privacy-mask' : '';
             } else if (p && p.price > 0 && mktEl) {
+                // 如果是編輯模式看到 0 股，也顯示包含昨收的數據
+                let pcRaw = p.prevClose !== undefined ? p.prevClose : '無資料';
                 const priceEl = document.getElementById('price_'+s.id);
-                priceEl.innerText = p.price;
-                if (isFreshFetch) {
-                    priceEl.classList.remove('data-flash');
-                    void priceEl.offsetWidth;
-                    priceEl.classList.add('data-flash');
-                }
+                priceEl.innerHTML = `<span style="font-size:1.05rem;" class="${isFreshFetch ? 'data-flash' : ''}">${p.price}</span><br><span style="font-size:0.75rem; color:#888;">昨收: ${pcRaw}</span>`;
             }
         });
 
