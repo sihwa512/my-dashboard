@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V34.0</title>
+    <title>退休資產戰情室 V35.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
         body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 12px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 1300px; background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 1px solid #333; box-sizing: border-box; overflow: hidden; }
         
-        /* 標題與工具列：電腦版同行，手機版自動換行置中 */
         .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; width: 100%; }
         h2 { margin: 0; color: var(--green); font-weight: 700; font-size: 1.6rem; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
         .header-actions { display: flex; gap: 8px; }
@@ -44,7 +43,6 @@
         thead th { position: sticky; top: 0; background: #252836; color: var(--blue); padding: 15px 5px; text-align: center; font-size: 0.85rem; border-bottom: 2px solid var(--slate); cursor: pointer; }
         td { padding: 14px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.95rem; }
         
-        /* 解決輸入框破版的關鍵：加入 box-sizing: border-box */
         input[type="number"] { box-sizing: border-box; background: #252836; border: 1px solid #555; color: #fff; padding: 8px; border-radius: 8px; width: 90px; text-align: center; font-size: 1rem; outline: none; }
         input[type="number"]:focus { border-color: var(--orange); }
         .input-readonly { background: #1a1c23; color: #777; border: 1px solid #333; cursor: not-allowed; }
@@ -63,11 +61,8 @@
         .btn-fetch:active { transform: translateY(2px); box-shadow: none; }
         .withdraw-input { width: 65px !important; background: #1b1e2e; border: 2px solid var(--blue); color: var(--blue); padding: 5px; border-radius: 8px; font-weight: bold; text-align: center; }
 
-        /* 手機版完美適應 */
         @media (max-width: 768px) {
             .container { padding: 12px; border-radius: 0; }
-            
-            /* 標題改為上下排列，徹底解決重疊問題 */
             .header-container { flex-direction: column; gap: 12px; align-items: center; margin-bottom: 20px; }
             h2 { font-size: 1.4rem; white-space: normal; text-align: center; }
             .header-actions { justify-content: center; width: 100%; }
@@ -81,7 +76,6 @@
             .chart-container { height: 200px; padding: 10px; margin-bottom: 15px; }
             .chart-header { font-size: 0.85rem; margin-bottom: 5px; }
             
-            /* 修正輸入框間距，防止超出邊界 */
             .target-inputs-wrapper { gap: 8px !important; }
             input[type="number"] { padding: 8px 4px; font-size: 0.95rem; }
             
@@ -171,8 +165,8 @@
             <span style="color:var(--blue); font-weight:bold;">⚖️ 目標再平衡 (Target %)</span>
             <div class="target-inputs-wrapper">
                 <div style="flex:1;"><small>股票</small><br><input type="number" id="target-s" value="40" style="width:100%" oninput="updateTargets()"></div>
-                <div style="flex:1;"><small>正2</small><br><input type="number" id="target-l" value="20" style="width:100%" oninput="updateTargets()"></div>
-                <div style="flex:1;"><small>債券</small><br><input type="number" id="target-b" value="40" style="width:100%" class="input-readonly" readonly></div>
+                <div style="flex:1;"><small>正2</small><br><input type="number" id="target-l" value="30" style="width:100%" oninput="updateTargets()"></div>
+                <div style="flex:1;"><small>債券</small><br><input type="number" id="target-b" value="30" style="width:100%" class="input-readonly" readonly></div>
             </div>
             <div class="ratio-bar-container">
                 <div id="stock-bar" class="part stock-part"></div>
@@ -182,7 +176,7 @@
         </div>
         
         <div class="summary-card" style="text-align: left; border: 1px solid var(--green); box-shadow: 0 0 15px rgba(0, 255, 136, 0.05);">
-            <span style="color:var(--green); font-weight:bold;">📈 提領模擬 | 提領率：<input type="number" id="swr-rate" value="4" step="0.1" class="withdraw-input" oninput="calculate()" style="border-color:var(--green); color:var(--green);">%</span>
+            <span style="color:var(--green); font-weight:bold;">📈 提領模擬 | 提領率：<input type="number" id="swr-rate" value="4" step="0.1" class="withdraw-input" oninput="updateSwr()" style="border-color:var(--green); color:var(--green);">%</span>
             <div style="display: flex; gap: 30px; margin-top: 20px;">
                 <div style="flex:1;"><span>預估年領取額</span><br><b id="annual-withdraw" style="color:var(--green);">-</b></div>
                 <div style="flex:1;"><span>預估月領取額</span><br><b id="monthly-withdraw" style="color:var(--blue);">-</b></div>
@@ -217,9 +211,19 @@
 
     window.onload = () => { 
         try {
+            // 【新增】讀取儲存的再平衡與提領目標
+            let savedS = localStorage.getItem('target_s');
+            if(savedS !== null) document.getElementById('target-s').value = savedS;
+            
+            let savedL = localStorage.getItem('target_l');
+            if(savedL !== null) document.getElementById('target-l').value = savedL;
+            
+            let savedSwr = localStorage.getItem('swr_rate');
+            if(savedSwr !== null) document.getElementById('swr-rate').value = savedSwr;
+
+            updateTargets(); // 初始化計算債券比例
             updateEyeUI(); 
             renderTable(); 
-            calculate(); 
             fetchUSD(); 
         } catch(e) { console.error(e); }
     };
@@ -312,7 +316,22 @@
         calculate();
     }
 
-    function updateTargets() { let s = Number(document.getElementById('target-s').value) || 0; let l = Number(document.getElementById('target-l').value) || 0; document.getElementById('target-b').value = (100 - s - l).toFixed(0); calculate(); }
+    // 【新增】將使用者的設定存入 LocalStorage
+    function updateTargets() { 
+        let s = Number(document.getElementById('target-s').value) || 0; 
+        let l = Number(document.getElementById('target-l').value) || 0; 
+        document.getElementById('target-b').value = (100 - s - l).toFixed(0); 
+        
+        localStorage.setItem('target_s', s);
+        localStorage.setItem('target_l', l);
+        calculate(); 
+    }
+
+    function updateSwr() {
+        let swr = document.getElementById('swr-rate').value;
+        localStorage.setItem('swr_rate', swr);
+        calculate();
+    }
     
     function save(id) { 
         localStorage.setItem('sh_'+id, document.getElementById('sh_'+id).value); 
