@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V42.0</title>
+    <title>退休資產戰情室 V43.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
@@ -97,7 +97,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V42.0</h2>
+        <h2>📊 綜合退休戰情室 V43.0</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
             <label class="icon-btn" title="還原資料" style="margin: 0;">
@@ -195,19 +195,11 @@
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbzIOppgygYd3sWBSjJoOwEZFjiSZ-nAgneD7sqALdItKarLxv9DobEoO_3k35tVmu4EHA/exec";
     
-    // ✨ 內建台股防呆字典，就算後台沒發佈好，前端照樣顯示正確名稱！
     const fallbackNames = {
-        "00662.TW": "富邦NASDAQ",
-        "00670L.TW": "富邦NASDAQ正2",
-        "00865B.TW": "國泰20年美債",
-        "0050.TW": "元大台灣50",
-        "006208.TW": "富邦台50",
-        "0056.TW": "元大高股息",
-        "00631L.TW": "元大台灣50正2",
-        "00663L.TW": "國泰台灣加權正2",
-        "00675L.TW": "富邦臺灣加權正2",
-        "2330.TW": "台積電",
-        "6689.TW": "伊雲谷"
+        "00662.TW": "富邦NASDAQ", "00670L.TW": "富邦NASDAQ正2", "00865B.TW": "國泰20年美債",
+        "0050.TW": "元大台灣50", "006208.TW": "富邦台50", "0056.TW": "元大高股息",
+        "00631L.TW": "元大台灣50正2", "00663L.TW": "國泰台灣加權正2", "00675L.TW": "富邦臺灣加權正2",
+        "2330.TW": "台積電", "6689.TW": "伊雲谷"
     };
 
     const initialStocks = [
@@ -381,13 +373,20 @@
             if (!isEditMode && (Number(sh) === 0 || sh === "")) return;
             holdingCount++;
             
-            // ✨ 名稱顯示防呆機制 (後台有抓到就用，沒抓到就用前端內建字典)
             let displayName = s.name || fallbackNames[s.sym] || "";
             let nameHtml = displayName ? `<br><span style="font-size:0.75rem; color:#aaa; font-weight:normal;">${displayName}</span>` : '';
-            
             let idDisplay = isEditMode 
                 ? `<div style="display:flex; align-items:center; justify-content:center;"><span class="btn-del" onclick="deleteStock('${s.id}')" title="刪除標的">✖</span><div style="line-height:1.3;"><b style="color:#fff">${s.id}</b>${nameHtml}</div></div>` 
                 : `<div style="line-height:1.3;"><b style="color:#fff">${s.id}</b>${nameHtml}</div>`;
+            
+            // ✨ 防誤觸：編輯模式顯示 input，平常只顯示乾淨的文字
+            let shDisplay = isEditMode 
+                ? `<input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')">`
+                : `<span style="font-size:1.05rem; font-weight:bold;">${Number(sh).toLocaleString()}</span>`;
+                
+            let coDisplay = isEditMode
+                ? `<input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')" step="0.01">`
+                : `<span style="font-size:1.05rem; font-weight:bold;">${Number(co).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2})}</span>`;
             
             let ch = localStorage.getItem('ch_'+s.id) || "";
             let ddDisplay = `<div id="dd_val_${s.id}">-</div>`;
@@ -399,10 +398,11 @@
 
             html += `<tr>
                 <td>${idDisplay}</td>
-                <td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td>
-                <td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td>
+                <td>${shDisplay}</td>
+                <td>${coDisplay}</td>
                 <td id="mkt_${s.id}">-</td>
-                <td id="pnl_${s.id}">-</td> <td id="price_${s.id}" style="color:var(--blue)">-</td>
+                <td id="pnl_${s.id}">-</td>
+                <td id="price_${s.id}" style="color:var(--blue)">-</td>
                 <td id="roi_${s.id}">-</td>
                 <td id="dd_cell_${s.id}">${ddDisplay}</td>
                 <td id="ytd_${s.id}">-</td>
@@ -505,7 +505,6 @@
                 
                 tDayChange += (p.price - pc) * sh;
                 
-                // ✨ 計算未實現損益
                 let pnlValue = (p.price - co) * sh;
                 let pnlColor = pnlValue >= 0 ? 'var(--green)' : 'var(--red)';
                 let pnlDisplay = pnlValue >= 0 ? `+${Math.round(pnlValue).toLocaleString()}` : Math.round(pnlValue).toLocaleString();
@@ -529,7 +528,6 @@
                 mktEl.innerText = Math.round(m).toLocaleString();
                 mktEl.className = isPrivate ? 'privacy-mask' : '';
                 
-                // ✨ 寫入未實現損益畫面
                 let pnlEl = document.getElementById('pnl_'+s.id);
                 if(pnlEl) {
                     pnlEl.innerHTML = `<span style="color:${pnlColor}; font-weight:bold;">${pnlDisplay}</span>`;
@@ -574,9 +572,17 @@
         
         document.getElementById('sum-val').innerText = Math.round(tVal).toLocaleString();
         document.getElementById('sum-val').className = isPrivate ? 'privacy-mask' : '';
-        document.getElementById('sum-change').innerHTML = `<span style="color:${tDayChange>=0?'var(--green)':'var(--red)'}">${tDayChange>=0?'+':''}${Math.round(tDayChange).toLocaleString()}</span>`;
+        
+        // ✨ 今日損益加上百分比
+        const prevTotalVal = tVal - tDayChange;
+        const dayChangePct = prevTotalVal > 0 ? (tDayChange / prevTotalVal * 100).toFixed(2) : "0.00";
+        let dayChangeColor = tDayChange >= 0 ? 'var(--green)' : 'var(--red)';
+        let dayChangeSign = tDayChange >= 0 ? '+' : '';
+        
+        document.getElementById('sum-change').innerHTML = `<span style="color:${dayChangeColor}">${dayChangeSign}${Math.round(tDayChange).toLocaleString()} <span style="font-size:0.85rem;">(${dayChangeSign}${dayChangePct}%)</span></span>`;
         document.getElementById('sum-change').className = isPrivate ? 'privacy-mask' : '';
-        document.getElementById('sum-change-card').style.border = `1px solid ${tDayChange>=0?'var(--green)':'var(--red)'}`;
+        document.getElementById('sum-change-card').style.border = `1px solid ${dayChangeColor}`;
+        
         document.getElementById('sum-pl').innerHTML = `<span style="color:${pl>=0?'var(--green)':'var(--red)'}">${Math.round(pl).toLocaleString()} (${pPct}%)</span>`;
         document.getElementById('sum-pl').className = isPrivate ? 'privacy-mask' : '';
         document.getElementById('sum-pl-card').style.border = `1px solid ${pl>=0?'var(--green)':'var(--red)'}`;
@@ -618,7 +624,6 @@
         }
     }
 
-    // ✨ 排序功能加入「損益排序 (pnl)」
     function sortTable(type) { 
         displayStocks.sort((a, b) => { 
             const shA = Number(localStorage.getItem('sh_'+a.id))||0; 
