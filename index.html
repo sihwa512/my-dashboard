@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V43.0</title>
+    <title>退休資產戰情室 V44.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
@@ -17,7 +17,7 @@
         .icon-btn:active { background: #444; transform: scale(0.9); }
 
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .summary-card { background: linear-gradient(145deg, #1b1e2e, #161926); padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .summary-card { background: linear-gradient(145deg, #1b1e2e, #161926); padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: border 0.3s; }
         .summary-card span { font-size: 0.8rem; color: #888; letter-spacing: 1px; }
         .summary-card b { font-size: 1.4rem; display: block; margin-top: 8px; font-family: 'Consolas', monospace; }
         
@@ -97,7 +97,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V43.0</h2>
+        <h2>📊 綜合退休戰情室 V44.0</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
             <label class="icon-btn" title="還原資料" style="margin: 0;">
@@ -120,8 +120,8 @@
         <div class="summary-card" id="sum-pl-card">
             <span>累積總損益</span><br><b id="sum-pl">-</b>
         </div>
-        <div class="summary-card" style="border: 1px solid var(--orange);">
-            <span>風險溫度(總回撤)</span><br><b id="sum-dd" style="color:var(--red)">-</b>
+        <div class="summary-card" id="sum-dd-card" style="border: 1px solid var(--green);">
+            <span>風險溫度(總回撤)</span><br><b id="sum-dd" style="color:var(--green)">-</b>
         </div>
     </div>
 
@@ -379,7 +379,6 @@
                 ? `<div style="display:flex; align-items:center; justify-content:center;"><span class="btn-del" onclick="deleteStock('${s.id}')" title="刪除標的">✖</span><div style="line-height:1.3;"><b style="color:#fff">${s.id}</b>${nameHtml}</div></div>` 
                 : `<div style="line-height:1.3;"><b style="color:#fff">${s.id}</b>${nameHtml}</div>`;
             
-            // ✨ 防誤觸：編輯模式顯示 input，平常只顯示乾淨的文字
             let shDisplay = isEditMode 
                 ? `<input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')">`
                 : `<span style="font-size:1.05rem; font-weight:bold;">${Number(sh).toLocaleString()}</span>`;
@@ -515,8 +514,13 @@
                 let chStr = localStorage.getItem('ch_'+s.id);
                 let ch = parseFloat(chStr);
                 let highMark = (ch > 0) ? ch : (parseFloat(p.high) || p.price);
-                const ddValue = highMark > 0 ? ((p.price - highMark) / highMark * 100).toFixed(2) : "0.00";
-                tDrawdown += (m / tVal) * parseFloat(ddValue);
+                
+                // 計算單檔回撤
+                const ddValueNum = highMark > 0 ? ((p.price - highMark) / highMark * 100) : 0;
+                const ddValue = ddValueNum.toFixed(2);
+                
+                // 累加到總回撤
+                tDrawdown += (m / tVal) * ddValueNum;
                 
                 let ytdOpenNum = parseFloat(p.ytdOpen);
                 let ytdValue = ytdOpenNum > 0 ? ((p.price - ytdOpenNum) / ytdOpenNum * 100).toFixed(2) : "0.00";
@@ -541,7 +545,7 @@
                 if(roiEl) roiEl.innerHTML = `<span style="color:${p.price>=co?'var(--green)':'var(--red)'}">${roi}%</span>`;
                 
                 let ddValEl = document.getElementById('dd_val_'+s.id);
-                if(ddValEl) ddValEl.innerHTML = `<span style="font-size:1.05rem; color:${ddValue<0?'var(--red)':'#fff'};">${ddValue}%</span>`;
+                if(ddValEl) ddValEl.innerHTML = `<span style="font-size:1.05rem; color:${ddValueNum<0?'var(--red)':'#fff'};">${ddValue}%</span>`;
                 if (!isEditMode) {
                     let ddSubEl = document.getElementById('dd_sub_'+s.id);
                     if(ddSubEl) {
@@ -573,7 +577,6 @@
         document.getElementById('sum-val').innerText = Math.round(tVal).toLocaleString();
         document.getElementById('sum-val').className = isPrivate ? 'privacy-mask' : '';
         
-        // ✨ 今日損益加上百分比
         const prevTotalVal = tVal - tDayChange;
         const dayChangePct = prevTotalVal > 0 ? (tDayChange / prevTotalVal * 100).toFixed(2) : "0.00";
         let dayChangeColor = tDayChange >= 0 ? 'var(--green)' : 'var(--red)';
@@ -586,7 +589,24 @@
         document.getElementById('sum-pl').innerHTML = `<span style="color:${pl>=0?'var(--green)':'var(--red)'}">${Math.round(pl).toLocaleString()} (${pPct}%)</span>`;
         document.getElementById('sum-pl').className = isPrivate ? 'privacy-mask' : '';
         document.getElementById('sum-pl-card').style.border = `1px solid ${pl>=0?'var(--green)':'var(--red)'}`;
-        document.getElementById('sum-dd').innerText = tDrawdown.toFixed(2) + "%";
+        
+        // ✨ 風險溫度顏色分級邏輯
+        let ddColor = 'var(--green)';
+        let ddIcon = '🌿';
+        if (tDrawdown <= -20) {
+            ddColor = 'var(--purple)';
+            ddIcon = '🌋';
+        } else if (tDrawdown <= -10) {
+            ddColor = 'var(--red)';
+            ddIcon = '🔥';
+        } else if (tDrawdown <= -5) {
+            ddColor = 'var(--orange)';
+            ddIcon = '⚠️';
+        }
+        
+        const sumDdEl = document.getElementById('sum-dd');
+        sumDdEl.innerHTML = `<span style="color:${ddColor}">${tDrawdown.toFixed(2)}% <span style="font-size:1.1rem">${ddIcon}</span></span>`;
+        document.getElementById('sum-dd-card').style.border = `1px solid ${ddColor}`;
 
         const ann = tVal * swrRate;
         document.getElementById('annual-withdraw').innerText = "NT$ " + Math.round(ann).toLocaleString();
