@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V36.0</title>
+    <title>退休資產戰情室 V37.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
@@ -41,9 +41,8 @@
         .table-wrapper { width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid var(--slate); box-shadow: 0 0 15px rgba(98, 114, 164, 0.1); margin-bottom: 20px; background: #1b1e2e; }
         table { width: 100%; border-collapse: collapse; min-width: 1100px; }
         thead th { position: sticky; top: 0; background: #252836; color: var(--blue); padding: 15px 5px; text-align: center; font-size: 0.85rem; border-bottom: 2px solid var(--slate); cursor: pointer; }
-        td { padding: 14px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.95rem; transition: color 0.3s, text-shadow 0.3s; }
+        td { padding: 14px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 0.95rem; }
         
-        /* 閃爍更新特效 */
         @keyframes flashUpdate {
             0% { color: #ffffff; text-shadow: 0 0 10px #ffffff; transform: scale(1.05); }
             100% { color: var(--blue); text-shadow: none; transform: scale(1); }
@@ -98,7 +97,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V36.0</h2>
+        <h2>📊 綜合退休戰情室</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
             <label class="icon-btn" title="還原資料" style="margin: 0;">
@@ -155,8 +154,8 @@
                     <th onclick="sortTable('market')">目前市值 ⇅</th>
                     <th>最新股價 <br><small style="color:#888; font-weight:normal;">(含昨收比對)</small></th>
                     <th onclick="sortTable('roi')">報酬率 ⇅</th>
-                    <th>回撤</th>
-                    <th>YTD</th>
+                    <th>回撤 <br><small style="color:#888; font-weight:normal;">(含最高價比對)</small></th>
+                    <th>YTD <br><small style="color:#888; font-weight:normal;">(含年初價格)</small></th>
                     <th onclick="sortTable('ratio')">佔比 ⇅</th>
                     <th>再平衡建議</th>
                 </tr>
@@ -193,7 +192,7 @@
 </div>
 
 <script>
-    // 您建立的全新 Yahoo Finance 獨立引擎 API
+    // 您的專屬 Yahoo API 引擎
     const API_URL = "https://script.google.com/macros/s/AKfycbzIOppgygYd3sWBSjJoOwEZFjiSZ-nAgneD7sqALdItKarLxv9DobEoO_3k35tVmu4EHA/exec";
     
     const initialStocks = [
@@ -216,6 +215,11 @@
     let isPrivate = localStorage.getItem('privacy_v28') === 'true';
     let equityChart = null;
     let isEditMode = false; 
+
+    const fmtP = (val) => {
+        if (val === undefined || isNaN(val) || val === 0) return '-';
+        return Number(parseFloat(val).toFixed(2)).toString();
+    };
 
     window.onload = () => { 
         try {
@@ -422,8 +426,7 @@
             if (sh > 0 && p && p.price > 0 && mktEl) {
                 const m = sh * p.price; tCost += (sh * co);
                 
-                // 這裡取得的 prevClose 現在絕對精準，因為直接來自 Yahoo Finance！
-                let pcRaw = p.prevClose !== undefined ? p.prevClose : '無資料';
+                let pcRaw = p.prevClose !== undefined ? fmtP(p.prevClose) : '無資料';
                 let pc = parseFloat(p.prevClose);
                 if (isNaN(pc) || pc === 0) pc = p.price; 
                 
@@ -431,24 +434,33 @@
                 
                 const roi = ((p.price - co) / co * 100).toFixed(2);
                 const rat = (m / tVal * 100).toFixed(1);
+                
+                // 計算回撤 (含最高價)
                 let highMark = parseFloat(p.high) || p.price;
                 const ddValue = highMark > 0 ? ((p.price - highMark) / highMark * 100).toFixed(2) : "0.00";
                 tDrawdown += (m / tVal) * parseFloat(ddValue);
+                
+                // 計算 YTD (含年初價)
+                let ytdOpenNum = parseFloat(p.ytdOpen);
+                let ytdValue = ytdOpenNum > 0 ? ((p.price - ytdOpenNum) / ytdOpenNum * 100).toFixed(2) : "0.00";
+                let ytdColor = ytdOpenNum > 0 ? (ytdValue >= 0 ? 'var(--green)' : 'var(--red)') : '#888';
+                let ytdDisplay = ytdOpenNum > 0 ? `${ytdValue}%` : "-";
+
                 let reb = s.id.includes('B') ? (tVal*tb-bVal)*(m/bVal||1) : (s.id.includes('L') ? (tVal*tl-lVal)*(m/lVal||1) : (tVal*ts-sVal)*(m/sVal||1));
 
                 mktEl.innerText = Math.round(m).toLocaleString();
                 mktEl.className = isPrivate ? 'privacy-mask' : '';
                 
                 const priceEl = document.getElementById('price_'+s.id);
-                priceEl.innerHTML = `<span style="font-size:1.05rem;" class="${isFreshFetch ? 'data-flash' : ''}">${p.price}</span><br><span style="font-size:0.75rem; color:#888;">昨收: ${pcRaw}</span>`;
+                priceEl.innerHTML = `<span style="font-size:1.05rem;" class="${isFreshFetch ? 'data-flash' : ''}">${fmtP(p.price)}</span><br><span style="font-size:0.75rem; color:#888;">昨收: ${pcRaw}</span>`;
                 
                 document.getElementById('roi_'+s.id).innerHTML = `<span style="color:${p.price>=co?'var(--green)':'var(--red)'}">${roi}%</span>`;
-                document.getElementById('dd_'+s.id).innerText = ddValue + "%";
                 
-                // YTD欄位若後台未提供，以 "-" 顯示，保持版面乾淨
-                let ytdDisplay = p.ytdOpen > 0 ? ((p.price-p.ytdOpen)/p.ytdOpen*100).toFixed(2)+"%" : "-";
-                let ytdColor = p.ytdOpen > 0 ? (p.price>=p.ytdOpen?'var(--green)':'var(--red)') : '#888';
-                document.getElementById('ytd_'+s.id).innerHTML = `<span style="color:${ytdColor}">${ytdDisplay}</span>`;
+                // 寫入回撤
+                document.getElementById('dd_'+s.id).innerHTML = `<span style="font-size:1.05rem;">${ddValue}%</span><br><span style="font-size:0.75rem; color:#888;">最高: ${fmtP(highMark)}</span>`;
+                
+                // 寫入 YTD
+                document.getElementById('ytd_'+s.id).innerHTML = `<span style="font-size:1.05rem; color:${ytdColor}">${ytdDisplay}</span><br><span style="font-size:0.75rem; color:#888;">年初: ${fmtP(p.ytdOpen)}</span>`;
                 
                 document.getElementById('rat_'+s.id).innerText = rat + "%";
                 
@@ -456,9 +468,9 @@
                 rEl.innerHTML = `<span style="color:${reb>=0?'var(--green)':'var(--red)'}; font-size:0.85rem;">${reb>=0?'加碼':'減碼'}<br>${Math.abs(Math.round(reb)).toLocaleString()}</span>`;
                 rEl.className = isPrivate ? 'privacy-mask' : '';
             } else if (p && p.price > 0 && mktEl) {
-                let pcRaw = p.prevClose !== undefined ? p.prevClose : '無資料';
+                let pcRaw = p.prevClose !== undefined ? fmtP(p.prevClose) : '無資料';
                 const priceEl = document.getElementById('price_'+s.id);
-                priceEl.innerHTML = `<span style="font-size:1.05rem;" class="${isFreshFetch ? 'data-flash' : ''}">${p.price}</span><br><span style="font-size:0.75rem; color:#888;">昨收: ${pcRaw}</span>`;
+                priceEl.innerHTML = `<span style="font-size:1.05rem;" class="${isFreshFetch ? 'data-flash' : ''}">${fmtP(p.price)}</span><br><span style="font-size:0.75rem; color:#888;">昨收: ${pcRaw}</span>`;
             }
         });
 
