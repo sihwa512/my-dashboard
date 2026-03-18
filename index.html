@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V46.0</title>
+    <title>退休資產戰情室 V47.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
@@ -19,6 +19,7 @@
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .summary-card { background: linear-gradient(145deg, #1b1e2e, #161926); padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: border 0.3s; }
         .summary-card span { font-size: 0.8rem; color: #888; letter-spacing: 1px; }
+        /* 這裡的 b 標籤帶有巨大間距，導致了先前的跑版烏龍 */
         .summary-card b { font-size: 1.4rem; display: block; margin-top: 8px; font-family: 'Consolas', monospace; }
         
         .chart-container { width: 100%; height: 260px; background: rgba(0,0,0,0.2); border-radius: 15px; border: 1px solid var(--purple); box-shadow: 0 0 15px rgba(189, 147, 249, 0.05); padding: 15px; margin-bottom: 20px; box-sizing: border-box; display: flex; flex-direction: column; }
@@ -55,11 +56,10 @@
         .privacy-mask { filter: blur(12px); opacity: 0.15; pointer-events: none; transition: 0.3s; }
         .empty-state { color: #888; padding: 30px !important; font-size: 0.9rem; letter-spacing: 0.5px; }
         
-        /* ✨ 全新底板卡片排版引擎 */
         .bottom-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; margin-bottom: 20px; width: 100%; }
-        .card-header-flex { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
-        .target-inputs-wrapper { display: flex; gap: 10px; width: 100%; margin-bottom: 15px; }
-        /* ✨ 關鍵防呆：加上 min-width: 0 讓手機螢幕再窄也不會破版擠出螢幕外 */
+        /* 微調：讓間距更緊湊 */
+        .card-header-flex { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+        .target-inputs-wrapper { display: flex; gap: 10px; width: 100%; margin-bottom: 12px; }
         .target-inputs-wrapper > div { flex: 1; min-width: 0; }
         .target-inputs-wrapper input { width: 100%; box-sizing: border-box; }
         
@@ -83,12 +83,11 @@
             .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
             .summary-grid > div:first-child { grid-column: span 2; }
             .summary-card { padding: 12px; }
-            .summary-card b { font-size: 1.2rem; }
+            .summary-card b { font-size: 1.2rem; margin-top: 5px; }
             
             .chart-container { height: 200px; padding: 10px; margin-bottom: 15px; }
             .chart-header { font-size: 0.85rem; margin-bottom: 5px; }
             
-            /* ✨ 手機專用下排卡片縮放 */
             .bottom-cards-grid { grid-template-columns: 1fr; gap: 15px; }
             .ratio-bar-container { height: 35px; }
             .part { font-size: 0.65rem; letter-spacing: -0.5px; }
@@ -99,7 +98,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V46.0</h2>
+        <h2>📊 綜合退休戰情室 V47.0</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
             <label class="icon-btn" title="還原資料" style="margin: 0;">
@@ -193,7 +192,7 @@
                 <span style="color:var(--green); font-weight:bold;">📈 提領模擬</span>
                 <span style="font-size:0.9rem; color:#aaa;">提領率: <input type="number" id="swr-rate" value="4" step="0.1" class="withdraw-input" oninput="updateSwr()" style="border-color:var(--green); color:var(--green);">%</span>
             </div>
-            <div style="display: flex; gap: 20px; margin-top: 15px;">
+            <div style="display: flex; gap: 20px; margin-top: 10px;">
                 <div style="flex:1;"><span>預估年領取額</span><br><b id="annual-withdraw" style="color:var(--green);">-</b></div>
                 <div style="flex:1;"><span>預估月領取額</span><br><b id="monthly-withdraw" style="color:var(--blue);">-</b></div>
             </div>
@@ -210,7 +209,7 @@
                     <input type="number" id="loan-amount" value="0" style="width:100%; box-sizing:border-box; background:#1b1e2e; border:2px solid var(--purple); color:var(--purple); padding:8px; border-radius:8px; font-weight:bold; text-align:center; font-size:1.1rem;" oninput="updateLoan()">
                 </div>
             </div>
-            <div style="display: flex; gap: 20px; margin-top: 15px;">
+            <div style="display: flex; gap: 20px; margin-top: 10px;">
                 <div style="flex:1;"><span>安全限額</span><br><b id="loan-limit" style="color:var(--purple);">-</b></div>
                 <div style="flex:1;"><span>尚餘可借</span><br><b id="loan-remain" style="color:var(--green);">-</b></div>
             </div>
@@ -700,13 +699,14 @@
             if(lb) { lb.style.width = lpStr+'%'; lb.innerText = `正2 ${lpStr}%`; }
             if(bb) { bb.style.width = bpStr+'%'; bb.innerText = `債券 ${bpStr}%`; }
 
+            // ✨ 【修復點】這裡去掉了 <b> 標籤，改用 span，徹底解決跑版問題！
             let spNum = Number(spStr) || 0;
             let lpNum = Number(lpStr) || 0;
             let currentBeta = (spNum/100 * 1.0) + (lpNum/100 * 2.0); 
             let targetBeta = (ts * 1.0) + (tl * 2.0);
             
             let betaEl = document.getElementById('beta-display');
-            if(betaEl) betaEl.innerHTML = `組合 Beta 👉 當前: <b style="color:#fff">${currentBeta.toFixed(2)}</b> | 目標: <b style="color:#fff">${targetBeta.toFixed(2)}</b>`;
+            if(betaEl) betaEl.innerHTML = `組合 Beta 👉 當前: <span style="color:#fff; font-weight:bold;">${currentBeta.toFixed(2)}</span> | 目標: <span style="color:#fff; font-weight:bold;">${targetBeta.toFixed(2)}</span>`;
             
             let loanAmtStr = localStorage.getItem('loan_amount');
             let loanAmt = Number(loanAmtStr) || 0;
