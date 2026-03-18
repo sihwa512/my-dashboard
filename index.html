@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V39.1</title>
+    <title>退休資產戰情室 V40.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f111a; --card: #161926; --green: #00ff88; --red: #ff4444; --text: #e0e0e0; --blue: #00d4ff; --orange: #ff9f1c; --purple: #bd93f9; --slate: #6272a4; }
@@ -97,7 +97,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V39.1</h2>
+        <h2>📊 綜合退休戰情室 V40.0</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
             <label class="icon-btn" title="還原資料" style="margin: 0;">
@@ -154,7 +154,7 @@
                     <th onclick="sortTable('market')">目前市值 ⇅</th>
                     <th>最新股價 <br><small style="color:#888; font-weight:normal;">(含昨收比對)</small></th>
                     <th onclick="sortTable('roi')">報酬率 ⇅</th>
-                    <th>回撤 <br><small style="color:#888; font-weight:normal;">(含歷史高價)</small></th>
+                    <th>回撤 <br><small style="color:#888; font-weight:normal;">(含最高價比對)</small></th>
                     <th>YTD <br><small style="color:#888; font-weight:normal;">(含年初價格)</small></th>
                     <th onclick="sortTable('ratio')">佔比 ⇅</th>
                     <th>再平衡建議</th>
@@ -234,7 +234,7 @@
             updateEyeUI(); 
             renderTable(); 
             
-            // ✨ 一打開網頁立刻觸發極速自動同步！
+            // ✨ 一開網頁極速自動同步！
             fetchAll(); 
         } catch(e) { console.error(e); }
     };
@@ -318,6 +318,7 @@
         localStorage.setItem('displayStocks_v28', JSON.stringify(displayStocks));
         localStorage.removeItem('sh_'+id);
         localStorage.removeItem('co_'+id);
+        localStorage.removeItem('ch_'+id); // 連同自訂高價一起刪除
         renderTable();
         calculate();
     }
@@ -342,6 +343,12 @@
         localStorage.setItem('co_'+id, document.getElementById('co_'+id).value); 
         calculate(); 
     }
+
+    // ✨ 儲存自訂高價 (不觸發 focus 遺失)
+    function saveCH(id) {
+        localStorage.setItem('ch_'+id, document.getElementById('ch_'+id).value);
+        calculate();
+    }
     
     function renderTable() {
         let html = "";
@@ -354,7 +361,27 @@
             
             let idDisplay = isEditMode ? `<div style="display:flex; align-items:center; justify-content:center;"><span class="btn-del" onclick="deleteStock('${s.id}')" title="刪除標的">✖</span><b style="color:#fff">${s.id}</b></div>` : `<b style="color:#fff">${s.id}</b>`;
             
-            html += `<tr><td>${idDisplay}</td><td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td><td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td><td id="mkt_${s.id}">-</td><td id="price_${s.id}" style="color:var(--blue)">-</td><td id="roi_${s.id}">-</td><td id="dd_${s.id}">-</td><td id="ytd_${s.id}">-</td><td id="rat_${s.id}">-</td><td id="reb_${s.id}">-</td></tr>`;
+            // ✨ 根據編輯模式，切換回撤欄位顯示：純文字 or 橘色自訂輸入框
+            let ch = localStorage.getItem('ch_'+s.id) || "";
+            let ddDisplay = `<div id="dd_val_${s.id}">-</div>`;
+            if (isEditMode) {
+                ddDisplay += `<input type="number" id="ch_${s.id}" value="${ch}" placeholder="自訂高價" onchange="saveCH('${s.id}')" title="留空則使用系統最高價" style="width:65px; padding:4px 2px; font-size:0.8rem; margin-top:4px; background:#252836; color:var(--orange); border:1px solid #555; border-radius:4px; text-align:center; box-sizing:border-box;">`;
+            } else {
+                ddDisplay += `<div id="dd_sub_${s.id}" style="font-size:0.75rem; color:#888; margin-top:2px;"></div>`;
+            }
+
+            html += `<tr>
+                <td>${idDisplay}</td>
+                <td><input type="number" id="sh_${s.id}" value="${sh}" oninput="save('${s.id}')"></td>
+                <td><input type="number" id="co_${s.id}" value="${co}" oninput="save('${s.id}')"></td>
+                <td id="mkt_${s.id}">-</td>
+                <td id="price_${s.id}" style="color:var(--blue)">-</td>
+                <td id="roi_${s.id}">-</td>
+                <td id="dd_cell_${s.id}">${ddDisplay}</td>
+                <td id="ytd_${s.id}">-</td>
+                <td id="rat_${s.id}">-</td>
+                <td id="reb_${s.id}">-</td>
+            </tr>`;
         });
 
         if (holdingCount === 0 && !isEditMode) {
@@ -376,7 +403,7 @@
         } catch (e) { document.getElementById('usd-twd-val').innerText = "暫無數據"; }
     }
 
-    // ✨ 極速載入機制 (Promise.all)
+    // ✨ 極速載入並行處理
     async function fetchAll() {
         const btn = document.getElementById('btn-f');
         btn.disabled = true; btn.innerHTML = "📡 極速載入中...";
@@ -443,8 +470,10 @@
                 const roi = ((p.price - co) / co * 100).toFixed(2);
                 const rat = (m / tVal * 100).toFixed(1);
                 
-                // ✨ 這裡的 p.high 現在已經是從後台接收到的「歷史高價」了
-                let highMark = parseFloat(p.high) || p.price;
+                // ✨ 自訂高價校正邏輯
+                let chStr = localStorage.getItem('ch_'+s.id);
+                let ch = parseFloat(chStr);
+                let highMark = (ch > 0) ? ch : (parseFloat(p.high) || p.price);
                 const ddValue = highMark > 0 ? ((p.price - highMark) / highMark * 100).toFixed(2) : "0.00";
                 tDrawdown += (m / tVal) * parseFloat(ddValue);
                 
@@ -459,23 +488,37 @@
                 mktEl.className = isPrivate ? 'privacy-mask' : '';
                 
                 const priceEl = document.getElementById('price_'+s.id);
-                priceEl.innerHTML = `<span style="font-size:1.05rem;" class="${isFreshFetch ? 'data-flash' : ''}">${fmtP(p.price)}</span><br><span style="font-size:0.75rem; color:#888;">昨收: ${pcRaw}</span>`;
+                if(priceEl) priceEl.innerHTML = `<span style="font-size:1.05rem;" class="${isFreshFetch ? 'data-flash' : ''}">${fmtP(p.price)}</span><br><span style="font-size:0.75rem; color:#888;">昨收: ${pcRaw}</span>`;
                 
-                document.getElementById('roi_'+s.id).innerHTML = `<span style="color:${p.price>=co?'var(--green)':'var(--red)'}">${roi}%</span>`;
+                let roiEl = document.getElementById('roi_'+s.id);
+                if(roiEl) roiEl.innerHTML = `<span style="color:${p.price>=co?'var(--green)':'var(--red)'}">${roi}%</span>`;
                 
-                document.getElementById('dd_'+s.id).innerHTML = `<span style="font-size:1.05rem;">${ddValue}%</span><br><span style="font-size:0.75rem; color:#888;">最高: ${fmtP(highMark)}</span>`;
+                // ✨ 寫入動態回撤與自訂高價標示
+                let ddValEl = document.getElementById('dd_val_'+s.id);
+                if(ddValEl) ddValEl.innerHTML = `<span style="font-size:1.05rem; color:${ddValue<0?'var(--red)':'#fff'};">${ddValue}%</span>`;
+                if (!isEditMode) {
+                    let ddSubEl = document.getElementById('dd_sub_'+s.id);
+                    if(ddSubEl) {
+                        let highDisplay = (ch > 0) ? `${fmtP(highMark)} <span style="color:var(--orange)">(自訂)</span>` : `最高: ${fmtP(highMark)}`;
+                        ddSubEl.innerHTML = highDisplay;
+                    }
+                }
                 
-                document.getElementById('ytd_'+s.id).innerHTML = `<span style="font-size:1.05rem; color:${ytdColor}">${ytdDisplay}</span><br><span style="font-size:0.75rem; color:#888;">年初: ${fmtP(p.ytdOpen)}</span>`;
+                let ytdEl = document.getElementById('ytd_'+s.id);
+                if(ytdEl) ytdEl.innerHTML = `<span style="font-size:1.05rem; color:${ytdColor}">${ytdDisplay}</span><br><span style="font-size:0.75rem; color:#888;">年初: ${fmtP(p.ytdOpen)}</span>`;
                 
-                document.getElementById('rat_'+s.id).innerText = rat + "%";
+                let ratEl = document.getElementById('rat_'+s.id);
+                if(ratEl) ratEl.innerText = rat + "%";
                 
                 const rEl = document.getElementById('reb_'+s.id);
-                rEl.innerHTML = `<span style="color:${reb>=0?'var(--green)':'var(--red)'}; font-size:0.85rem;">${reb>=0?'加碼':'減碼'}<br>${Math.abs(Math.round(reb)).toLocaleString()}</span>`;
-                rEl.className = isPrivate ? 'privacy-mask' : '';
+                if(rEl) {
+                    rEl.innerHTML = `<span style="color:${reb>=0?'var(--green)':'var(--red)'}; font-size:0.85rem;">${reb>=0?'加碼':'減碼'}<br>${Math.abs(Math.round(reb)).toLocaleString()}</span>`;
+                    rEl.className = isPrivate ? 'privacy-mask' : '';
+                }
             } else if (p && p.price > 0 && mktEl) {
                 let pcRaw = p.prevClose !== undefined ? fmtP(p.prevClose) : '無資料';
                 const priceEl = document.getElementById('price_'+s.id);
-                priceEl.innerHTML = `<span style="font-size:1.05rem;" class="${isFreshFetch ? 'data-flash' : ''}">${fmtP(p.price)}</span><br><span style="font-size:0.75rem; color:#888;">昨收: ${pcRaw}</span>`;
+                if(priceEl) priceEl.innerHTML = `<span style="font-size:1.05rem;" class="${isFreshFetch ? 'data-flash' : ''}">${fmtP(p.price)}</span><br><span style="font-size:0.75rem; color:#888;">昨收: ${pcRaw}</span>`;
             }
         });
 
