@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V65.0</title>
+    <title>退休資產戰情室 V66.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -125,7 +125,6 @@
             .bottom-cards-grid { grid-template-columns: 1fr; gap: 15px; }
             .ratio-bar-container { height: 35px; }
             .part { font-size: 0.65rem; letter-spacing: -0.5px; }
-            /* ✨ 按鈕區塊手機版調整 */
             #action-buttons-wrapper { flex-direction: column; }
             .btn-fetch { padding: 15px; font-size: 1.1rem; width: 100%; }
         }
@@ -134,7 +133,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V65.0</h2>
+        <h2>📊 綜合退休戰情室 V66.0</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
             <label class="icon-btn" title="還原資料" style="margin: 0;">
@@ -442,23 +441,19 @@
         calculate(); 
     }
 
-    // ✨ V65.0 新增：一鍵解除所有鎖定
     function unlockAllPC() {
         if(!confirm("確定要解除所有「自訂」與「智能」的昨收鎖定，交回給系統抓取嗎？\n(如果 Yahoo 發生延遲，價格可能會跳回前天)")) return;
         
         let keysToRemove = [];
         for(let i=0; i<localStorage.length; i++) {
             let key = localStorage.key(i);
-            // 找出所有與昨收鎖定相關的變數
             if (key.startsWith('cp_') || key.startsWith('auto_pc_') || key.startsWith('eod_pc_') || key.startsWith('eod_date_')) {
                 keysToRemove.push(key);
             }
         }
         
-        // 刪除所有鎖定
         keysToRemove.forEach(k => localStorage.removeItem(k));
         
-        // 清除當下記憶體中的智能鎖狀態
         displayStocks.forEach(s => {
             let p = currentPrices[s.id];
             if(p) {
@@ -880,6 +875,7 @@
         const canvasEl = document.getElementById('historyChart');
         if(!canvasEl) return;
         const ctx = canvasEl.getContext('2d');
+        
         const labels = Object.keys(historyData).sort(); 
         const data = labels.map(k => historyData[k]); 
         const shortLabels = labels.map(date => date.substring(5)); 
@@ -987,9 +983,14 @@
                     pc = parseFloat(p.prevClose); 
                 }
 
+                // 🛠️ V66 防呆：確保 pc 絕對不會變成 NaN
                 if (isNaN(pc) || pc === 0) pc = p.price; 
+                if (isNaN(pc)) pc = 0; 
                 
-                tDayChange += (p.price - pc) * sh;
+                let dayDiff = p.price - pc;
+                if (!isNaN(dayDiff)) {
+                    tDayChange += dayDiff * sh;
+                }
                 
                 let pnlValue = (p.price - co) * sh;
                 let pnlColor = pnlValue >= 0 ? 'var(--green)' : 'var(--red)';
@@ -1075,13 +1076,18 @@
         }
         
         const prevTotalVal = tVal - tDayChange;
-        const dayChangePct = prevTotalVal > 0 ? (tDayChange / prevTotalVal * 100).toFixed(2) : "0.00";
+        let dayChangePct = "0.00";
+        if (prevTotalVal > 0 && !isNaN(tDayChange)) {
+            dayChangePct = (tDayChange / prevTotalVal * 100).toFixed(2);
+        }
+        
         let dayChangeColor = tDayChange >= 0 ? 'var(--green)' : 'var(--red)';
         let dayChangeSign = tDayChange >= 0 ? '+' : '';
+        let safeDayChange = isNaN(tDayChange) ? 0 : tDayChange;
         
         let sumChangeEl = document.getElementById('sum-change');
         if(sumChangeEl) {
-            sumChangeEl.innerHTML = `<span style="color:${dayChangeColor}">${dayChangeSign}${Math.round(tDayChange).toLocaleString()} <span style="font-size:0.85rem;">(${dayChangeSign}${dayChangePct}%)</span></span>`;
+            sumChangeEl.innerHTML = `<span style="color:${dayChangeColor}">${dayChangeSign}${Math.round(safeDayChange).toLocaleString()} <span style="font-size:0.85rem;">(${dayChangeSign}${dayChangePct}%)</span></span>`;
             sumChangeEl.className = isPrivate ? 'privacy-mask' : '';
         }
         let sumChangeCard = document.getElementById('sum-change-card');
@@ -1112,7 +1118,8 @@
         if(annEl) { annEl.innerText = "NT$ " + Math.round(ann).toLocaleString(); annEl.className = isPrivate ? 'privacy-mask' : ''; }
         if(monEl) { monEl.innerText = "NT$ " + Math.round(ann/12).toLocaleString(); monEl.className = isPrivate ? 'privacy-mask' : ''; }
 
-        if (tVal > 0) {
+        // ✨ 確保 tVal 是有效的數字才畫圖，並執行自動修復 (Auto-Heal)
+        if (tVal > 0 && !isNaN(tVal)) {
             const spStr = (sVal/tVal*100).toFixed(1);
             const lpStr = (lVal/tVal*100).toFixed(1);
             const bpStr = (bVal/tVal*100).toFixed(1);
@@ -1164,6 +1171,38 @@
                 fiEl.innerText = fiMultiplier + " 倍";
                 fiEl.style.color = fiMultiplier >= 25 ? 'var(--green)' : 'var(--orange)';
                 fiEl.className = isPrivate ? 'privacy-mask' : '';
+            }
+
+            // 📈 圖表自動修復與存檔機制
+            try {
+                let todayDate = new Date().toISOString().split('T')[0]; 
+                let historyData = {};
+                let hStored = localStorage.getItem('equityHistory');
+                if (hStored && hStored !== "undefined") {
+                    historyData = JSON.parse(hStored);
+                }
+
+                // 🛠️ 自動修復：把被 NaN 污染的紀錄通通清掉
+                for (let k in historyData) {
+                    if (historyData[k] === null || isNaN(historyData[k])) {
+                        delete historyData[k];
+                    }
+                }
+
+                if (Object.keys(historyData).length === 0) {
+                    let yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+                    let safeChangeForHistory = isNaN(tDayChange) ? 0 : tDayChange;
+                    historyData[yesterday] = Math.round(tVal - safeChangeForHistory);
+                }
+                
+                historyData[todayDate] = Math.round(tVal);
+                let keys = Object.keys(historyData).sort();
+                if (keys.length > 30) delete historyData[keys[0]]; // 只保留最近 30 筆
+                
+                localStorage.setItem('equityHistory', JSON.stringify(historyData));
+                drawChart(historyData);
+            } catch(e) {
+                localStorage.removeItem('equityHistory');
             }
         }
     }
