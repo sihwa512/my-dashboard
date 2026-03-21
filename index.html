@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V67.2 記帳風控版</title>
+    <title>退休資產戰情室 V68.0 實戰再平衡版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -49,7 +49,7 @@
         .scroll-hint { display: none; }
 
         .table-wrapper { width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid var(--slate); box-shadow: 0 0 15px rgba(98, 114, 164, 0.1); margin-bottom: 20px; background: #1b1e2e; }
-        table { width: 100%; border-collapse: collapse; min-width: 1150px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1250px; }
         thead th { position: sticky; top: 0; background: #252836; color: var(--blue); padding: 15px 5px; text-align: center; font-size: 0.95rem; border-bottom: 2px solid var(--slate); cursor: pointer; }
         td { padding: 14px 5px; border-bottom: 1px solid #2d303e; text-align: center; font-size: 1.05rem; transition: color 0.3s, text-shadow 0.3s; }
         
@@ -87,7 +87,7 @@
         
         .withdraw-input { width: 65px !important; background: #1b1e2e; border: 2px solid var(--blue); color: var(--blue); padding: 5px; border-radius: 8px; font-weight: bold; text-align: center; }
 
-        /* 佈局排版調整 */
+        .fire-stats-wrapper { display: flex; gap: 15px; align-items:center; }
         .loan-inputs-wrapper { display: flex; gap: 15px; margin-top: 5px; align-items:center; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 999; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
@@ -96,10 +96,8 @@
         .trade-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
         .trade-tab { flex: 1; padding: 12px; text-align: center; border-radius: 8px; cursor: pointer; border: 1px solid #555; background: #252836; color: #aaa; font-weight: bold; transition: 0.2s; font-size: 1.05rem; }
         
-        /* 股票買賣的紅綠配置 */
         .trade-tab.active-buy { background: rgba(255, 68, 68, 0.15); border-color: var(--red); color: var(--red); }
         .trade-tab.active-sell { background: rgba(0, 255, 136, 0.15); border-color: var(--green); color: var(--green); }
-        /* 借還款專屬的紫色/灰色配置 */
         .trade-tab.active-borrow { background: rgba(189, 147, 249, 0.15); border-color: var(--purple); color: var(--purple); }
         .trade-tab.active-repay { background: rgba(136, 136, 136, 0.15); border-color: #888; color: #ccc; }
 
@@ -137,6 +135,7 @@
             .ratio-bar-container { height: 35px; }
             .part { font-size: 0.85rem; letter-spacing: -0.5px; }
 
+            .fire-stats-wrapper { flex-direction: column; align-items: stretch; gap: 12px; }
             .loan-inputs-wrapper { flex-direction: column; align-items: stretch; gap: 12px; }
             #beta-display { font-size: 0.85rem !important; }
         }
@@ -145,7 +144,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V67.2</h2>
+        <h2>📊 綜合退休戰情室 V68.0</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
             <label class="icon-btn" title="還原資料" style="margin: 0;">
@@ -214,7 +213,7 @@
                     <th>回撤 <br><small style="color:#888; font-weight:normal;">(含最高價)</small></th>
                     <th onclick="sortTable('ytd')">YTD <br><small style="color:#888; font-weight:normal;">(含年初價)</small></th>
                     <th onclick="sortTable('ratio')">佔比 ⇅</th>
-                    <th>再平衡建議</th>
+                    <th>再平衡 (買賣建議)</th>
                 </tr>
             </thead>
             <tbody id="list"></tbody>
@@ -266,21 +265,23 @@
                 <div style="flex:1;"><span>預估月領取額</span><br><b id="monthly-withdraw" style="color:var(--blue);">-</b></div>
             </div>
             <hr style="border:0; border-top:1px dashed #333; margin: 15px 0;">
-            <div style="margin-bottom: 10px;">
-                <small style="color:#aaa;">預估年開銷 (手動輸入)</small><br>
-                <div style="display:flex; align-items:center; background:#1b1e2e; border:1px solid var(--green); border-radius:8px; padding:0 8px; margin-top:5px; max-width: 250px;">
-                    <span style="color:var(--green); font-weight:bold; font-size:1.1rem;">NT$</span>
-                    <input type="text" inputmode="numeric" id="annual-expenses" value="500,000" style="width:100%; background:transparent; border:none; color:var(--green); padding:6px; font-weight:bold; text-align:center; font-size:1.2rem; outline:none;" oninput="formatNumberInput(this); updateExpenses()">
+            <div class="fire-stats-wrapper">
+                <div style="flex:1.2;">
+                    <small style="color:#aaa;">預估年開銷 (手動輸入)</small><br>
+                    <div style="display:flex; align-items:center; background:#1b1e2e; border:1px solid var(--green); border-radius:8px; padding:0 8px; margin-top:5px;">
+                        <span style="color:var(--green); font-weight:bold; font-size:1.1rem;">NT$</span>
+                        <input type="text" inputmode="numeric" id="annual-expenses" value="500,000" style="width:100%; background:transparent; border:none; color:var(--green); padding:6px; font-weight:bold; text-align:center; font-size:1.2rem; outline:none;" oninput="formatNumberInput(this); updateExpenses()">
+                    </div>
                 </div>
-            </div>
-            <div style="display: flex; gap: 15px; background: rgba(0, 255, 136, 0.05); padding: 12px; border-radius: 12px; margin-top: 15px;">
-                <div style="flex:1; text-align:center; border-right: 1px dashed rgba(255,255,255,0.1);">
-                    <span style="font-size:0.9rem; color:#aaa;">總資產達開銷</span><br>
-                    <b id="fi-multiplier" style="font-size:1.5rem; margin-top:4px; display:block;">- 倍</b>
-                </div>
-                <div style="flex:1; text-align:center;">
-                    <span style="font-size:0.9rem; color:var(--orange);">類現金(目標15x)</span><br>
-                    <b id="safe-asset-multiplier" style="font-size:1.5rem; margin-top:4px; display:block;">- 倍</b>
+                <div style="flex:1; text-align:center; display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <span style="font-size:0.85rem; color:#aaa;">總資產達開銷</span><br>
+                        <b id="fi-multiplier" style="font-size:1.4rem; margin-top:2px;">- 倍</b>
+                    </div>
+                    <div style="flex:1;">
+                        <span style="font-size:0.85rem; color:var(--orange);">類現金(目標15x)</span><br>
+                        <b id="safe-asset-multiplier" style="font-size:1.4rem; margin-top:2px;">- 倍</b>
+                    </div>
                 </div>
             </div>
         </div>
@@ -398,8 +399,6 @@
 
     let currentTradeId = '';
     let currentTradeType = 'buy'; 
-    
-    // ✨ V67.2 借貸全域變數
     let currentLoanType = 'borrow';
 
     const fmtP = (val) => {
@@ -424,7 +423,6 @@
                 }
             }
 
-            // ✨ V67.2 將借款金額改由 span 顯示
             let savedLoan = localStorage.getItem('loan_amount');
             if(savedLoan !== null) {
                 savedLoan = savedLoan.replace(/,/g, '');
@@ -656,7 +654,6 @@
         calculate();
     }
 
-    // ✨ 股票買賣彈窗邏輯
     function openTradeModal(id) {
         currentTradeId = id;
         document.getElementById('trade-modal').style.display = 'flex';
@@ -725,7 +722,6 @@
         calculate();
     }
 
-    // ✨ V67.2 借還款記帳中心邏輯
     function openLoanModal() {
         document.getElementById('loan-modal').style.display = 'flex';
         let currentLoan = Number(localStorage.getItem('loan_amount')) || 0;
@@ -1176,9 +1172,15 @@
                 let ratEl = document.getElementById('rat_'+s.id);
                 if(ratEl) ratEl.innerText = rat + "%";
                 
+                // ✨ V68.0 加入「預估買賣張數」計算
                 const rEl = document.getElementById('reb_'+s.id);
                 if(rEl) {
-                    rEl.innerHTML = `<span style="color:${reb>=0?'var(--red)':'var(--green)'}; font-size:0.95rem;">${reb>=0?'流入':'提領'}<br>${Math.abs(Math.round(reb)).toLocaleString()}</span>`;
+                    if (isCash) {
+                        rEl.innerHTML = `<span style="color:${reb>=0?'var(--red)':'var(--green)'}; font-size:1.05rem; font-weight:bold;">${reb>=0?'流入':'提領'}<br>${Math.abs(Math.round(reb)).toLocaleString()}</span>`;
+                    } else {
+                        let lots = (Math.abs(reb) / p.price / 1000).toFixed(1);
+                        rEl.innerHTML = `<span style="color:${reb>=0?'var(--red)':'var(--green)'}; font-size:1.05rem; font-weight:bold;">${reb>=0?'加碼':'減碼'}<br>${Math.abs(Math.round(reb)).toLocaleString()}<br><small style="color:#aaa; font-size:0.85rem;">(約 ${lots} 張)</small></span>`;
+                    }
                     rEl.className = isPrivate ? 'privacy-mask' : '';
                 }
             }
@@ -1258,22 +1260,21 @@
             let targetBeta = (ts * 1.0) + (tl * 2.0);
             
             let betaEl = document.getElementById('beta-display');
-            if(betaEl) betaEl.innerHTML = `Beta 👉 當前: <span style="color:#fff; font-weight:bold;">${currentBeta.toFixed(2)}</span> | 目標: <span style="color:#fff; font-weight:bold;">${targetBeta.toFixed(2)}</span>`;
+            if(betaEl) betaEl.innerHTML = `組合 Beta 👉 當前: <span style="color:#fff; font-weight:bold;">${currentBeta.toFixed(2)}</span> | 目標: <span style="color:#fff; font-weight:bold;">${targetBeta.toFixed(2)}</span>`;
             
-            // ✨ V67.2 讀取記帳中心算出來的總借款
             let loanAmt = Number(localStorage.getItem('loan_amount')) || 0;
             if(document.getElementById('loan-amount-display')) {
                 document.getElementById('loan-amount-display').innerText = loanAmt.toLocaleString('en-US');
             }
             
-            let reqPledge = loanAmt * 5; // 需準備 5 倍市值
+            let reqPledge = loanAmt * 5; 
             let reqPledgeEl = document.getElementById('required-pledge');
             if(reqPledgeEl) {
                 reqPledgeEl.innerText = Math.round(reqPledge).toLocaleString();
                 reqPledgeEl.className = isPrivate ? 'privacy-mask' : '';
             }
             
-            let loanLimit = tVal * 0.20; // 安全可借額度維持總資產 20%
+            let loanLimit = tVal * 0.20; 
             let loanRemain = loanLimit - loanAmt;
             
             let limitEl = document.getElementById('loan-limit');
@@ -1289,7 +1290,6 @@
                 remainEl.className = isPrivate ? 'privacy-mask' : '';
             }
 
-            // ✨ V67.2 計算防禦資產 15 倍指標
             let expRaw = document.getElementById('annual-expenses').value.replace(/,/g, '');
             let annualExpenses = Number(expRaw) || 1;
             
@@ -1301,7 +1301,7 @@
                 fiEl.className = isPrivate ? 'privacy-mask' : '';
             }
             
-            let safeAssetVal = bVal + cVal; // 防禦資產 = 債券 + 現金
+            let safeAssetVal = bVal + cVal; 
             let safeMultiplier = annualExpenses > 0 ? (safeAssetVal / annualExpenses).toFixed(1) : 0;
             let safeEl = document.getElementById('safe-asset-multiplier');
             if(safeEl) {
