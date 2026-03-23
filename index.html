@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V68.1 資金流動版</title>
+    <title>退休資產戰情室 V69.3 大局風控版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -91,7 +91,7 @@
         .loan-inputs-wrapper { display: flex; gap: 15px; margin-top: 5px; align-items:center; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 999; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-content { background: #1b1e2e; border: 1px solid var(--blue); padding: 25px; border-radius: 15px; width: 90%; max-width: 350px; box-shadow: 0 0 30px rgba(0, 212, 255, 0.2); position: relative; }
+        .modal-content { background: #1b1e2e; border: 1px solid var(--blue); padding: 25px; border-radius: 15px; width: 90%; max-width: 450px; box-shadow: 0 0 30px rgba(0, 212, 255, 0.2); position: relative; max-height: 90vh; overflow-y: auto; }
         .modal-title { color: var(--blue); margin-top: 0; margin-bottom: 20px; font-size: 1.4rem; text-align: center; font-weight: bold; }
         .trade-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
         .trade-tab { flex: 1; padding: 12px; text-align: center; border-radius: 8px; cursor: pointer; border: 1px solid #555; background: #252836; color: #aaa; font-weight: bold; transition: 0.2s; font-size: 1.05rem; }
@@ -112,12 +112,18 @@
         .btn-confirm { background: var(--blue); color: #000; }
         .btn-confirm:active { transform: scale(0.95); }
 
+        .history-list { margin-top: 15px; border-top: 1px dashed #555; padding-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .history-item { background: #0f111a; border: 1px solid #333; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .history-item-left { display: flex; flex-direction: column; gap: 4px; }
+        .history-item-right { text-align: right; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+        .history-del-btn { background: rgba(255,68,68,0.1); color: var(--red); border: 1px solid var(--red); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-top: 5px; }
+
         @media (max-width: 768px) {
             .container { padding: 12px; border-radius: 0; }
             .header-container { flex-direction: column; gap: 12px; align-items: center; margin-bottom: 20px; }
             h2 { font-size: 1.5rem; white-space: normal; text-align: center; }
-            .header-actions { justify-content: center; width: 100%; }
-            .icon-btn { font-size: 1.3rem; padding: 8px 15px; }
+            .header-actions { justify-content: center; width: 100%; flex-wrap: wrap; }
+            .icon-btn { font-size: 1.2rem; padding: 8px 12px; }
             
             .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
             .summary-grid > div:first-child { grid-column: span 2; }
@@ -137,15 +143,15 @@
 
             .fire-stats-wrapper { flex-direction: column; align-items: stretch; gap: 12px; }
             .loan-inputs-wrapper { flex-direction: column; align-items: stretch; gap: 12px; }
-            #beta-display { font-size: 0.85rem !important; }
         }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V68.1</h2>
+        <h2>📊 綜合退休戰情室 V69.3</h2>
         <div class="header-actions">
+            <span class="icon-btn" onclick="openHistoryLedgerModal()" style="border-color:var(--orange); color:var(--orange);">📜 交易紀錄</span>
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
             <label class="icon-btn" title="還原資料" style="margin: 0;">
                 📂<input type="file" id="import-file" accept=".json" style="display:none;" onchange="importData(event)">
@@ -189,12 +195,15 @@
     </div>
 
     <div id="add-stock-bar" class="add-stock-bar">
-        <div style="display:flex; align-items:center; gap:10px;">
-            <span style="color:var(--orange); font-weight:bold; font-size:1rem;">➕ 新增自選標的：</span>
-            <input type="text" id="new-stock-id" class="add-input" placeholder="輸入代號 (或 CASH)" onkeypress="if(event.key === 'Enter') addNewStock()">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap: wrap;">
+            <span style="color:var(--orange); font-weight:bold; font-size:1rem;">➕ 新增標的：</span>
+            <input type="text" id="new-stock-id" class="add-input" placeholder="代號(或 CASH)" onkeypress="if(event.key === 'Enter') addNewStock()">
             <button class="btn-add" onclick="addNewStock()">新增入池</button>
         </div>
-        <button class="btn-add" onclick="unlockAllPC()" style="background: rgba(255,68,68,0.1); border: 1px solid var(--red); color: var(--red); margin-left: auto;">🧹 清除手動/智能昨收</button>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap: wrap;">
+            <button class="btn-add" onclick="unlockAllPC()" style="background: rgba(255,159,28,0.1); border: 1px solid var(--orange); color: var(--orange);">🧹 清除昨收鎖定</button>
+            <button class="btn-add" onclick="factoryReset()" style="background: rgba(255,68,68,0.1); border: 1px solid var(--red); color: var(--red);">🗑️ 系統重置 (清空資料)</button>
+        </div>
     </div>
 
     <div class="scroll-hint">👈 左右滑動表格查看完整數據 👉</div>
@@ -226,9 +235,33 @@
         
         <div class="summary-card" style="text-align: left; border: 1px solid var(--blue); box-shadow: 0 0 15px rgba(0, 212, 255, 0.05);">
             <div class="card-header-flex">
-                <span style="color:var(--blue); font-weight:bold;">⚖️ 目標再平衡 (Target %)</span>
-                <span id="beta-display" style="font-size:0.95rem; color:#aaa; background:#252836; padding:4px 8px; border-radius:6px; white-space:nowrap;">Beta: -</span>
+                <span style="color:var(--blue); font-weight:bold;">⚖️ 目標再平衡</span>
+                <span id="current-beta-display" style="font-size:0.95rem; color:#aaa; background:#252836; padding:4px 8px; border-radius:6px; white-space:nowrap;">當前 Beta: -</span>
             </div>
+            
+            <div style="display:flex; justify-content:space-between; background:rgba(0, 212, 255, 0.05); padding:10px; border-radius:8px; margin-bottom:15px; text-align:center;">
+                <div style="flex:1; border-right: 1px dashed rgba(255,255,255,0.1);">
+                    <span style="color:#aaa; font-size:0.85rem;">現況 股票</span><br>
+                    <b id="actual-s" style="color:var(--blue); font-size:1.15rem;">-%</b><br>
+                    <small id="actual-s-val" style="color:#888; font-size:0.8rem;">$0</small>
+                </div>
+                <div style="flex:1; border-right: 1px dashed rgba(255,255,255,0.1);">
+                    <span style="color:#aaa; font-size:0.85rem;">現況 槓桿</span><br>
+                    <b id="actual-l" style="color:var(--purple); font-size:1.15rem;">-%</b><br>
+                    <small id="actual-l-val" style="color:#888; font-size:0.8rem;">$0</small>
+                </div>
+                <div style="flex:1;">
+                    <span style="color:#aaa; font-size:0.85rem;">現況 類現金</span><br>
+                    <b id="actual-safe" style="color:var(--green); font-size:1.15rem;">-%</b><br>
+                    <small id="actual-safe-val" style="color:#888; font-size:0.8rem;">$0</small>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 5px;">
+                <span style="font-size:0.9rem; color:#aaa;">🛠️ 手動調整目標佔比：</span>
+                <span id="target-beta-display" style="font-size:0.9rem; color:var(--orange); font-weight:bold; background:rgba(255, 159, 28, 0.1); padding:2px 6px; border-radius:4px;">目標 Beta: -</span>
+            </div>
+
             <div class="target-inputs-wrapper">
                 <div>
                     <small style="color:#aaa; white-space:nowrap;">股票(手)</small>
@@ -332,12 +365,16 @@
                 <input type="number" id="trade-shares" placeholder="例如: 1000">
             </div>
             <div class="trade-input-group" id="trade-price-group">
-                <label>成交單價</label>
+                <label>成交單價 (NT$)</label>
                 <input type="number" id="trade-price" placeholder="請輸入成交價格" step="0.01">
+            </div>
+            <div class="trade-input-group" id="trade-fee-group">
+                <label>券商手續費與交易稅 (NT$)</label>
+                <input type="number" id="trade-fee" placeholder="請依照券商 APP 實際扣款輸入" value="0">
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeTradeModal()">取消</button>
-                <button class="btn-confirm" onclick="submitTrade()">確認</button>
+                <button class="btn-confirm" onclick="submitTrade()">確認送出</button>
             </div>
         </div>
     </div>
@@ -358,8 +395,22 @@
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeLoanModal()">取消</button>
-                <button class="btn-confirm" style="background:var(--purple); color:#fff;" onclick="submitLoanTrade()">確認計算</button>
+                <button class="btn-confirm" style="background:var(--purple); color:#fff;" onclick="submitLoanTrade()">確認送出</button>
             </div>
+        </div>
+    </div>
+
+    <div id="history-ledger-modal" class="modal-overlay">
+        <div class="modal-content" style="max-height: 85vh; overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="color:var(--orange); margin:0; font-size:1.4rem;">📜 歷史交易明細</h3>
+                <button onclick="closeHistoryLedgerModal()" style="background:none; border:none; color:#aaa; font-size:1.5rem; cursor:pointer;">✖</button>
+            </div>
+            <p style="font-size:0.85rem; color:#888; line-height:1.4; margin-bottom:15px;">
+                💡 提示：此處為您的個人交易流水帳。若您刪除此處的紀錄，<b>不會</b>自動還原主畫面的庫存數據。如需修正庫存與成本，請於主畫面點擊「⚙️管理股票池」修改。
+            </p>
+            <div id="history-ledger-list" class="history-list">
+                </div>
         </div>
     </div>
 
@@ -390,6 +441,12 @@
             if (!Array.isArray(displayStocks) || displayStocks.length === 0) displayStocks = initialStocks;
         }
     } catch (e) { localStorage.setItem('displayStocks_v28', JSON.stringify(initialStocks)); }
+
+    let tradeLedger = [];
+    try {
+        let storedLedger = localStorage.getItem('trade_ledger_v69');
+        if(storedLedger) tradeLedger = JSON.parse(storedLedger);
+    } catch(e) {}
 
     let currentPrices = {};
     let isPrivate = localStorage.getItem('privacy_v28') === 'true';
@@ -536,6 +593,16 @@
         calculate();
     }
 
+    function factoryReset() {
+        if(confirm("⚠️ 警告：您即將清除「所有」的股票、現金、借款與歷史紀錄！\n\n建議您先點擊上方 💾 備份資料。\n\n確定要全部清除嗎？")) {
+            if(confirm("⛔ 最後確認：資料清除後【完全無法復原】！\n真的要清空嗎？")) {
+                localStorage.clear();
+                alert("✅ 所有資料已清空，系統將恢復預設狀態。");
+                location.reload();
+            }
+        }
+    }
+
     function addNewStock() {
         let el = document.getElementById('new-stock-id');
         if(!el) return;
@@ -666,10 +733,12 @@
         
         document.getElementById('trade-shares-label').innerText = isCash ? '存入/提領金額 (NT$)' : '成交股數 (請填正數)';
         document.getElementById('trade-price-group').style.display = isCash ? 'none' : 'block';
+        document.getElementById('trade-fee-group').style.display = isCash ? 'none' : 'block';
 
         let currentP = currentPrices[id] ? currentPrices[id].price : '';
         document.getElementById('trade-price').value = isCash ? 1 : currentP;
         document.getElementById('trade-shares').value = '';
+        document.getElementById('trade-fee').value = '0';
         
         setTradeType('buy');
     }
@@ -684,10 +753,10 @@
         document.getElementById('tab-sell').className = 'trade-tab' + (type === 'sell' ? ' active-sell' : '');
     }
 
-    // ✨ V68.1 股票交易與現金池連動邏輯
     function submitTrade() {
         let tradeSh = Number(document.getElementById('trade-shares').value);
         let tradePx = currentTradeId === 'CASH' ? 1 : Number(document.getElementById('trade-price').value);
+        let tradeFee = Number(document.getElementById('trade-fee').value) || 0;
         
         if(tradeSh <= 0 || tradePx <= 0) { 
             alert('請輸入大於 0 的數字！'); 
@@ -696,20 +765,26 @@
 
         let oldSh = Number(localStorage.getItem('sh_' + currentTradeId)) || 0;
         let oldCo = Number(localStorage.getItem('co_' + currentTradeId)) || (currentTradeId === 'CASH' ? 1 : 0);
-        let tradeValue = tradeSh * tradePx; 
+        let tradeBaseValue = tradeSh * tradePx; 
         let currentCash = Number(localStorage.getItem('sh_CASH')) || 0; 
+        let netFlow = 0; 
 
         if (currentTradeType === 'buy') {
+            let totalCost = tradeBaseValue + tradeFee; 
+            netFlow = totalCost; 
+            
             let newSh = oldSh + tradeSh;
-            let newCo = currentTradeId === 'CASH' ? 1 : ((oldSh * oldCo) + tradeValue) / newSh;
+            let newCo = currentTradeId === 'CASH' ? 1 : ((oldSh * oldCo) + totalCost) / newSh;
             localStorage.setItem('sh_' + currentTradeId, newSh);
             localStorage.setItem('co_' + currentTradeId, newCo.toFixed(4));
             
-            // ✨ 買進股票：自動扣除現金
             if (currentTradeId !== 'CASH') {
-                localStorage.setItem('sh_CASH', Math.round(currentCash - tradeValue));
+                localStorage.setItem('sh_CASH', Math.round(currentCash - totalCost));
             }
         } else {
+            let netRevenue = tradeBaseValue - tradeFee; 
+            netFlow = netRevenue; 
+            
             let newSh = oldSh - tradeSh;
             let actionName = currentTradeId === 'CASH' ? '提領金額' : '賣出股數';
             
@@ -724,15 +799,93 @@
                 localStorage.setItem('sh_' + currentTradeId, newSh);
             }
 
-            // ✨ 賣出股票：資金自動流入現金池
             if (currentTradeId !== 'CASH') {
-                localStorage.setItem('sh_CASH', Math.round(currentCash + tradeValue));
+                localStorage.setItem('sh_CASH', Math.round(currentCash + netRevenue));
             }
         }
         
+        let now = new Date();
+        let dateStr = now.getFullYear() + '/' + 
+                      String(now.getMonth()+1).padStart(2, '0') + '/' + 
+                      String(now.getDate()).padStart(2, '0') + ' ' + 
+                      String(now.getHours()).padStart(2, '0') + ':' + 
+                      String(now.getMinutes()).padStart(2, '0');
+                      
+        let newRecord = {
+            id: Date.now(),
+            date: dateStr,
+            sym: currentTradeId,
+            type: currentTradeType,
+            shares: tradeSh,
+            price: tradePx,
+            fee: tradeFee,
+            net: netFlow
+        };
+        
+        tradeLedger.unshift(newRecord); 
+        localStorage.setItem('trade_ledger_v69', JSON.stringify(tradeLedger));
+
         closeTradeModal();
         renderTable();
         calculate();
+    }
+
+    function openHistoryLedgerModal() {
+        renderHistoryLedger();
+        document.getElementById('history-ledger-modal').style.display = 'flex';
+    }
+
+    function closeHistoryLedgerModal() {
+        document.getElementById('history-ledger-modal').style.display = 'none';
+    }
+
+    function deleteLedgerRecord(recordId) {
+        if(confirm("確定要刪除這筆流水帳嗎？\n(注意：刪除明細不會改變您目前的庫存與成本，如有需要請至主畫面手動修改庫存)")) {
+            tradeLedger = tradeLedger.filter(r => r.id !== recordId);
+            localStorage.setItem('trade_ledger_v69', JSON.stringify(tradeLedger));
+            renderHistoryLedger();
+        }
+    }
+
+    function renderHistoryLedger() {
+        let container = document.getElementById('history-ledger-list');
+        if(tradeLedger.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">尚無交易紀錄</div>';
+            return;
+        }
+        
+        let html = '';
+        tradeLedger.forEach(r => {
+            let isCash = r.sym === 'CASH';
+            let typeStr = r.type === 'buy' ? (isCash ? '入金' : '買進') : (isCash ? '出金' : '賣出');
+            let color = r.type === 'buy' ? 'var(--red)' : 'var(--green)'; 
+            if(isCash) color = r.type === 'buy' ? 'var(--blue)' : 'var(--orange)'; 
+            
+            let symName = fallbackNames[r.sym + (r.sym.includes('.')?'':'.TW')] || r.sym;
+            if(isCash) symName = '現金池';
+
+            let descHtml = isCash 
+                ? `<span style="font-size:1.1rem; color:#fff;">金額：${Math.round(r.shares).toLocaleString()}</span>` 
+                : `<span style="font-size:1.1rem; color:#fff;">${r.shares} 股 @ ${r.price}</span>`;
+            
+            let feeHtml = r.fee > 0 ? `<span style="font-size:0.85rem; color:#888;">含稅費 ${r.fee}</span>` : '';
+
+            html += `
+            <div class="history-item">
+                <div class="history-item-left">
+                    <span style="font-size:0.85rem; color:#aaa;">${r.date}</span>
+                    <span style="font-size:1.1rem; font-weight:bold; color:${color};">${typeStr} ${r.sym}</span>
+                    <span style="font-size:0.85rem; color:#888;">${symName}</span>
+                    <button class="history-del-btn" onclick="deleteLedgerRecord(${r.id})">刪除</button>
+                </div>
+                <div class="history-item-right">
+                    ${descHtml}
+                    ${feeHtml}
+                    <span style="font-size:1.1rem; font-weight:bold; color:#ccc; margin-top:5px;">淨額: ${Math.round(r.net).toLocaleString()}</span>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
     }
 
     function openLoanModal() {
@@ -1264,6 +1417,30 @@
             if(bb) { bb.style.width = bpStr+'%'; bb.innerText = `債 ${bpStr}%`; }
             if(cb) { cb.style.width = cpStr+'%'; cb.innerText = `現 ${cpStr}%`; }
 
+            // ✨ V69.3 更新現況大分類佔比數字與金額 (含馬賽克)
+            if(document.getElementById('actual-s')) document.getElementById('actual-s').innerText = spStr + "%";
+            let actualSValEl = document.getElementById('actual-s-val');
+            if(actualSValEl) {
+                actualSValEl.innerText = "$" + Math.round(sVal).toLocaleString();
+                actualSValEl.className = isPrivate ? 'privacy-mask' : '';
+            }
+
+            if(document.getElementById('actual-l')) document.getElementById('actual-l').innerText = lpStr + "%";
+            let actualLValEl = document.getElementById('actual-l-val');
+            if(actualLValEl) {
+                actualLValEl.innerText = "$" + Math.round(lVal).toLocaleString();
+                actualLValEl.className = isPrivate ? 'privacy-mask' : '';
+            }
+
+            let safeTotalPct = (Number(bpStr) || 0) + (Number(cpStr) || 0);
+            if(document.getElementById('actual-safe')) document.getElementById('actual-safe').innerText = safeTotalPct.toFixed(1) + "%";
+            let actualSafeValEl = document.getElementById('actual-safe-val');
+            let safeAssetVal = bVal + cVal;
+            if(actualSafeValEl) {
+                actualSafeValEl.innerText = "$" + Math.round(safeAssetVal).toLocaleString();
+                actualSafeValEl.className = isPrivate ? 'privacy-mask' : '';
+            }
+
             drawDonutChart(sVal, lVal, bVal, cVal);
 
             let spNum = Number(spStr) || 0;
@@ -1271,8 +1448,12 @@
             let currentBeta = (spNum/100 * 1.0) + (lpNum/100 * 2.0); 
             let targetBeta = (ts * 1.0) + (tl * 2.0);
             
-            let betaEl = document.getElementById('beta-display');
-            if(betaEl) betaEl.innerHTML = `Beta 👉 當前: <span style="color:#fff; font-weight:bold;">${currentBeta.toFixed(2)}</span> | 目標: <span style="color:#fff; font-weight:bold;">${targetBeta.toFixed(2)}</span>`;
+            // ✨ V69.3 當前與目標 Beta 分離標示
+            let currentBetaEl = document.getElementById('current-beta-display');
+            if(currentBetaEl) currentBetaEl.innerHTML = `當前 Beta: <span style="color:#fff; font-weight:bold;">${currentBeta.toFixed(2)}</span>`;
+            
+            let targetBetaEl = document.getElementById('target-beta-display');
+            if(targetBetaEl) targetBetaEl.innerHTML = `目標 Beta: ${targetBeta.toFixed(2)}`;
             
             let loanAmt = Number(localStorage.getItem('loan_amount')) || 0;
             if(document.getElementById('loan-amount-display')) {
@@ -1313,7 +1494,6 @@
                 fiEl.className = isPrivate ? 'privacy-mask' : '';
             }
             
-            let safeAssetVal = bVal + cVal; 
             let safeMultiplier = annualExpenses > 0 ? (safeAssetVal / annualExpenses).toFixed(1) : 0;
             let safeEl = document.getElementById('safe-asset-multiplier');
             if(safeEl) {
