@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V69.7 精準損益版</title>
+    <title>退休資產戰情室 V70.0 真實損益版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -18,11 +18,16 @@
         .icon-btn:active { background: #444; transform: scale(0.9); }
 
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .summary-card { background: linear-gradient(145deg, #1b1e2e, #161926); padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: border 0.3s; }
+        .summary-card { background: linear-gradient(145deg, #1b1e2e, #161926); padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: border 0.3s; position: relative; }
         .summary-card span { font-size: 0.95rem; color: #aaa; letter-spacing: 1px; font-weight: bold; }
         .summary-card b { font-size: 1.6rem; display: block; margin-top: 8px; font-family: 'Consolas', monospace; }
         small { font-size: 0.9rem; } 
         
+        /* ✨ V70 投入本金輸入框樣式 */
+        .principal-input-wrapper { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 5px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 6px; }
+        .principal-input-wrapper input { width: 90px; background: transparent; border: none; border-bottom: 1px dashed #555; color: #fff; text-align: center; font-size: 0.95rem; font-weight: bold; padding: 2px; outline: none; border-radius: 0; }
+        .principal-input-wrapper input:focus { border-bottom-color: var(--blue); }
+
         .charts-wrapper { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; width: 100%; }
         .chart-container { background: rgba(0,0,0,0.2); border-radius: 15px; border: 1px solid var(--purple); box-shadow: 0 0 15px rgba(189, 147, 249, 0.05); padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
         .chart-line { flex: 2.5; min-width: 300px; height: 260px; }
@@ -131,17 +136,15 @@
             @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 
             .bottom-cards-grid { grid-template-columns: 1fr; gap: 15px; }
-            
             .fire-stats-wrapper { flex-direction: column; align-items: stretch; gap: 12px; }
             .loan-inputs-wrapper { flex-direction: column; align-items: stretch; gap: 12px; }
-            #beta-display { font-size: 0.85rem !important; }
         }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V69.7</h2>
+        <h2>📊 綜合退休戰情室 V70.0</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="openHistoryLedgerModal()" style="border-color:var(--orange); color:var(--orange);">📜 交易紀錄</span>
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
@@ -162,9 +165,16 @@
         <div class="summary-card" id="sum-change-card">
             <span>今日損益跳動</span><br><b id="sum-change">-</b>
         </div>
+        
         <div class="summary-card" id="sum-pl-card">
-            <span>累積總損益</span><br><b id="sum-pl">-</b>
+            <span title="公式：資產總市值 - 投入總本金">真實累積總損益</span><br>
+            <b id="sum-pl">-</b>
+            <div class="principal-input-wrapper">
+                <span style="font-size:0.85rem; color:#aaa;">投入本金: $</span>
+                <input type="text" id="total-principal" value="0" inputmode="numeric" oninput="formatNumberInput(this); updatePrincipal();" placeholder="輸入您的總本金">
+            </div>
         </div>
+
         <div class="summary-card" id="sum-dd-card" style="border: 1px solid var(--green);">
             <span>風險溫度(總回撤)</span><br><b id="sum-dd" style="color:var(--green)">-</b>
         </div>
@@ -460,6 +470,16 @@
         el.value = Number(val).toLocaleString('en-US');
     }
 
+    // ✨ 儲存並更新投入本金
+    function updatePrincipal() {
+        let el = document.getElementById('total-principal');
+        if(el) {
+            let rawVal = el.value.replace(/,/g, '');
+            localStorage.setItem('total_principal', rawVal);
+        }
+        calculate();
+    }
+
     window.onload = () => { 
         try {
             let savedExp = localStorage.getItem('annual_expenses');
@@ -478,6 +498,12 @@
                 if(document.getElementById('loan-amount-display')) {
                     document.getElementById('loan-amount-display').innerText = Number(savedLoan).toLocaleString('en-US');
                 }
+            }
+            
+            // ✨ 載入投入本金
+            let savedPrincipal = localStorage.getItem('total_principal');
+            if(savedPrincipal !== null && document.getElementById('total-principal')) {
+                document.getElementById('total-principal').value = Number(savedPrincipal).toLocaleString('en-US');
             }
 
             let savedS = localStorage.getItem('target_s');
@@ -1203,9 +1229,8 @@
         });
     }
 
-    // ✨ V69.7 精準損益邏輯：投資與現金完全分離
     function calculate(isFreshFetch = false) {
-        let tVal = 0, tInvestedVal = 0, tInvestedCost = 0, tDayChange = 0, tDrawdown = 0;
+        let tVal = 0, tDayChange = 0, tDrawdown = 0;
         let sVal = 0, lVal = 0, bVal = 0, cVal = 0;
         
         let swrEl = document.getElementById('swr-rate');
@@ -1245,11 +1270,6 @@
             
             if (sh > 0 && p && p.price > 0 && mktEl) {
                 const m = sh * p.price; 
-                // ✨ 只將股票、槓桿、債券算入投資成本與投資市值
-                if (!isCash) {
-                    tInvestedCost += (sh * co);
-                    tInvestedVal += m;
-                }
                 
                 let cpStr = localStorage.getItem('cp_'+s.id);
                 let pc = 0;
@@ -1267,7 +1287,6 @@
                 if (isNaN(pc)) pc = 0; 
                 
                 let dayDiff = p.price - pc;
-                // ✨ 確保現金(1-1=0)不會干擾日變動邏輯
                 if (!isNaN(dayDiff) && !isCash) {
                     tDayChange += dayDiff * sh;
                 }
@@ -1286,7 +1305,6 @@
                 const ddValueNum = highMark > 0 ? ((p.price - highMark) / highMark * 100) : 0;
                 const ddValue = ddValueNum.toFixed(2);
                 
-                // Drawdown 依舊採用整體權重（現金會成為緩衝）
                 tDrawdown += (m / tVal) * ddValueNum;
                 
                 let cyStr = localStorage.getItem('cy_'+s.id);
@@ -1356,17 +1374,43 @@
             }
         });
 
-        // ✨ V69.7 精準損益計算：僅用投資成本與投資市值計算
-        const pl = tInvestedVal - tInvestedCost;
-        const pPct = tInvestedCost > 0 ? (pl / tInvestedCost * 100).toFixed(2) : 0;
-        
         let sumValEl = document.getElementById('sum-val');
         if(sumValEl) {
             sumValEl.innerText = Math.round(tVal).toLocaleString();
             sumValEl.className = isPrivate ? 'privacy-mask' : '';
         }
         
-        // ✨ V69.7 今日損益變動百分比：以昨日的投資市值為分母
+        // ✨ V70.0 真實損益計算邏輯
+        let principalRaw = document.getElementById('total-principal') ? document.getElementById('total-principal').value.replace(/,/g, '') : "0";
+        let principal = Number(principalRaw) || 0;
+        let truePnL = 0;
+        let truePnLPct = 0;
+        
+        if (principal > 0) {
+            truePnL = tVal - principal;
+            truePnLPct = (truePnL / principal * 100).toFixed(2);
+        } else {
+            // 如果沒輸入本金，顯示提示
+            truePnL = 0;
+            truePnLPct = 0;
+        }
+
+        let sumPlEl = document.getElementById('sum-pl');
+        if(sumPlEl) {
+            if (principal === 0) {
+                sumPlEl.innerHTML = `<span style="color:#888; font-size:0.9rem;">請輸入下方投入本金</span>`;
+            } else {
+                let pnlColor = truePnL >= 0 ? 'var(--red)' : 'var(--green)';
+                let pnlSign = truePnL >= 0 ? '+' : '';
+                sumPlEl.innerHTML = `<span style="color:${pnlColor}">${pnlSign}${Math.round(truePnL).toLocaleString()} (${pnlSign}${truePnLPct}%)</span>`;
+            }
+            sumPlEl.className = isPrivate ? 'privacy-mask' : '';
+        }
+        let sumPlCard = document.getElementById('sum-pl-card');
+        if(sumPlCard) sumPlCard.style.border = `1px solid ${principal > 0 ? (truePnL>=0?'var(--red)':'var(--green)') : '#333'}`;
+        
+        // 今日損益 (扣除現金影響)
+        let tInvestedVal = sVal + lVal + bVal; // 投資總額(不含現金)
         const prevInvestedVal = tInvestedVal - tDayChange;
         let dayChangePct = "0.00";
         if (prevInvestedVal > 0 && !isNaN(tDayChange)) {
@@ -1384,14 +1428,6 @@
         }
         let sumChangeCard = document.getElementById('sum-change-card');
         if(sumChangeCard) sumChangeCard.style.border = `1px solid ${dayChangeColor}`;
-        
-        let sumPlEl = document.getElementById('sum-pl');
-        if(sumPlEl) {
-            sumPlEl.innerHTML = `<span style="color:${pl>=0?'var(--red)':'var(--green)'}">${Math.round(pl).toLocaleString()} (${pPct}%)</span>`;
-            sumPlEl.className = isPrivate ? 'privacy-mask' : '';
-        }
-        let sumPlCard = document.getElementById('sum-pl-card');
-        if(sumPlCard) sumPlCard.style.border = `1px solid ${pl>=0?'var(--red)':'var(--green)'}`;
         
         let ddColor = 'var(--green)';
         let ddIcon = '🌿';
