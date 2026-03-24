@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V70.0 真實損益版</title>
+    <title>退休資產戰情室 V70.1 資金全自動版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -23,7 +23,6 @@
         .summary-card b { font-size: 1.6rem; display: block; margin-top: 8px; font-family: 'Consolas', monospace; }
         small { font-size: 0.9rem; } 
         
-        /* ✨ V70 投入本金輸入框樣式 */
         .principal-input-wrapper { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 5px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 6px; }
         .principal-input-wrapper input { width: 90px; background: transparent; border: none; border-bottom: 1px dashed #555; color: #fff; text-align: center; font-size: 0.95rem; font-weight: bold; padding: 2px; outline: none; border-radius: 0; }
         .principal-input-wrapper input:focus { border-bottom-color: var(--blue); }
@@ -144,7 +143,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V70.0</h2>
+        <h2>📊 綜合退休戰情室 V70.1</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="openHistoryLedgerModal()" style="border-color:var(--orange); color:var(--orange);">📜 交易紀錄</span>
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
@@ -470,7 +469,6 @@
         el.value = Number(val).toLocaleString('en-US');
     }
 
-    // ✨ 儲存並更新投入本金
     function updatePrincipal() {
         let el = document.getElementById('total-principal');
         if(el) {
@@ -500,7 +498,6 @@
                 }
             }
             
-            // ✨ 載入投入本金
             let savedPrincipal = localStorage.getItem('total_principal');
             if(savedPrincipal !== null && document.getElementById('total-principal')) {
                 document.getElementById('total-principal').value = Number(savedPrincipal).toLocaleString('en-US');
@@ -779,6 +776,9 @@
         let tradeBaseValue = tradeSh * tradePx; 
         let currentCash = Number(localStorage.getItem('sh_CASH')) || 0; 
         let netFlow = 0; 
+        
+        // ✨ 取得當前投入本金
+        let currentPrincipal = Number(localStorage.getItem('total_principal')) || 0;
 
         if (currentTradeType === 'buy') {
             let totalCost = tradeBaseValue + tradeFee; 
@@ -791,6 +791,13 @@
             
             if (currentTradeId !== 'CASH') {
                 localStorage.setItem('sh_CASH', Math.round(currentCash - totalCost));
+            } else {
+                // ✨ 現金存入 (入金)：自動增加投入本金
+                currentPrincipal += tradeBaseValue;
+                localStorage.setItem('total_principal', currentPrincipal);
+                if(document.getElementById('total-principal')) {
+                    document.getElementById('total-principal').value = Number(currentPrincipal).toLocaleString('en-US');
+                }
             }
         } else {
             let netRevenue = tradeBaseValue - tradeFee; 
@@ -812,6 +819,13 @@
 
             if (currentTradeId !== 'CASH') {
                 localStorage.setItem('sh_CASH', Math.round(currentCash + netRevenue));
+            } else {
+                // ✨ 現金提領 (出金)：自動減少投入本金
+                currentPrincipal -= tradeBaseValue;
+                localStorage.setItem('total_principal', currentPrincipal);
+                if(document.getElementById('total-principal')) {
+                    document.getElementById('total-principal').value = Number(currentPrincipal).toLocaleString('en-US');
+                }
             }
         }
         
@@ -1380,7 +1394,6 @@
             sumValEl.className = isPrivate ? 'privacy-mask' : '';
         }
         
-        // ✨ V70.0 真實損益計算邏輯
         let principalRaw = document.getElementById('total-principal') ? document.getElementById('total-principal').value.replace(/,/g, '') : "0";
         let principal = Number(principalRaw) || 0;
         let truePnL = 0;
@@ -1390,7 +1403,6 @@
             truePnL = tVal - principal;
             truePnLPct = (truePnL / principal * 100).toFixed(2);
         } else {
-            // 如果沒輸入本金，顯示提示
             truePnL = 0;
             truePnLPct = 0;
         }
@@ -1409,8 +1421,7 @@
         let sumPlCard = document.getElementById('sum-pl-card');
         if(sumPlCard) sumPlCard.style.border = `1px solid ${principal > 0 ? (truePnL>=0?'var(--red)':'var(--green)') : '#333'}`;
         
-        // 今日損益 (扣除現金影響)
-        let tInvestedVal = sVal + lVal + bVal; // 投資總額(不含現金)
+        let tInvestedVal = sVal + lVal + bVal; 
         const prevInvestedVal = tInvestedVal - tDayChange;
         let dayChangePct = "0.00";
         if (prevInvestedVal > 0 && !isNaN(tDayChange)) {
