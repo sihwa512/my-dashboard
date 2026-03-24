@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V69.6 對照優化版</title>
+    <title>退休資產戰情室 V69.7 精準損益版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -131,7 +131,7 @@
             @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 
             .bottom-cards-grid { grid-template-columns: 1fr; gap: 15px; }
-
+            
             .fire-stats-wrapper { flex-direction: column; align-items: stretch; gap: 12px; }
             .loan-inputs-wrapper { flex-direction: column; align-items: stretch; gap: 12px; }
             #beta-display { font-size: 0.85rem !important; }
@@ -141,7 +141,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V69.6</h2>
+        <h2>📊 綜合退休戰情室 V69.7</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="openHistoryLedgerModal()" style="border-color:var(--orange); color:var(--orange);">📜 交易紀錄</span>
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
@@ -398,7 +398,7 @@
                 <button onclick="closeHistoryLedgerModal()" style="background:none; border:none; color:#aaa; font-size:1.5rem; cursor:pointer;">✖</button>
             </div>
             <p style="font-size:0.85rem; color:#888; line-height:1.4; margin-bottom:15px;">
-                💡 提示：此處為您的個人交易流水帳。若您刪除此處的紀錄，<b>不會</b>自動還原主畫面的庫存數據。如需修正庫存與成本，請於主畫面點擊「⚙️管理股票池」修改.
+                💡 提示：此處為您的個人交易流水帳。若您刪除此處的紀錄，<b>不會</b>自動還原主畫面的庫存數據。如需修正庫存與成本，請於主畫面點擊「⚙️管理股票池」修改。
             </p>
             <div id="history-ledger-list" class="history-list">
                 </div>
@@ -1153,7 +1153,6 @@
         });
     }
 
-    // ✨ V69.6 優化：圓餅圖不再合併「類現金」，而是單獨展示「債券」和「現金」
     function drawDonutChart(sVal, lVal, bVal, cVal) {
         if (typeof Chart === 'undefined') return;
         const dCtx = document.getElementById('donutChart');
@@ -1163,13 +1162,10 @@
         donutChartObj = new Chart(dCtx.getContext('2d'), {
             type: 'doughnut',
             data: {
-                // labels 增加「債券」和「現金」
                 labels: ['股票', '槓桿', '債券', '現金'],
                 datasets: [{
-                    // data 傳遞四個單獨的值
                     data: [sVal, lVal, bVal, cVal],
-                    // backgroundColor 增加一種顏色給債券
-                    backgroundColor: ['#00d4ff', '#bd93f9', '#ff9f1c', '#00ff88'], // 橙色為債券
+                    backgroundColor: ['#00d4ff', '#bd93f9', '#ff9f1c', '#00ff88'], 
                     borderWidth: 0,
                     hoverOffset: 6
                 }]
@@ -1207,8 +1203,9 @@
         });
     }
 
+    // ✨ V69.7 精準損益邏輯：投資與現金完全分離
     function calculate(isFreshFetch = false) {
-        let tVal = 0, tCost = 0, tDayChange = 0, tDrawdown = 0;
+        let tVal = 0, tInvestedVal = 0, tInvestedCost = 0, tDayChange = 0, tDrawdown = 0;
         let sVal = 0, lVal = 0, bVal = 0, cVal = 0;
         
         let swrEl = document.getElementById('swr-rate');
@@ -1220,7 +1217,6 @@
         const tl = targetLEl ? (Number(targetLEl.value)/100) : 0.3;
         const tSafe = 1 - ts - tl;
 
-        // 計算目標金額並顯示 (V69.5 新增)
         let targetSAmtEl = document.getElementById('target-s-amt');
         let targetLAmtEl = document.getElementById('target-l-amt');
         let targetSafeAmtEl = document.getElementById('target-safe-amt');
@@ -1236,7 +1232,6 @@
             }
         });
 
-        // 顯示目標金額 (V69.5)
         if (targetSAmtEl) { targetSAmtEl.innerText = "$" + Math.round(tVal * ts).toLocaleString(); targetSAmtEl.className = isPrivate ? 'privacy-mask' : ''; }
         if (targetLAmtEl) { targetLAmtEl.innerText = "$" + Math.round(tVal * tl).toLocaleString(); targetLAmtEl.className = isPrivate ? 'privacy-mask' : ''; }
         if (targetSafeAmtEl) { targetSafeAmtEl.innerText = "$" + Math.round(tVal * tSafe).toLocaleString(); targetSafeAmtEl.className = isPrivate ? 'privacy-mask' : ''; }
@@ -1246,13 +1241,19 @@
         displayStocks.forEach(s => {
             const sh = Number(localStorage.getItem('sh_'+s.id)) || 0, co = Number(localStorage.getItem('co_'+s.id)) || 0, p = currentPrices[s.id];
             const mktEl = document.getElementById('mkt_'+s.id);
+            let isCash = s.id === 'CASH';
             
             if (sh > 0 && p && p.price > 0 && mktEl) {
-                const m = sh * p.price; tCost += (sh * co);
+                const m = sh * p.price; 
+                // ✨ 只將股票、槓桿、債券算入投資成本與投資市值
+                if (!isCash) {
+                    tInvestedCost += (sh * co);
+                    tInvestedVal += m;
+                }
                 
                 let cpStr = localStorage.getItem('cp_'+s.id);
                 let pc = 0;
-                if (s.id === 'CASH') {
+                if (isCash) {
                     pc = 1;
                 } else if (cpStr !== null && cpStr !== "") {
                     pc = parseFloat(cpStr); 
@@ -1266,7 +1267,8 @@
                 if (isNaN(pc)) pc = 0; 
                 
                 let dayDiff = p.price - pc;
-                if (!isNaN(dayDiff)) {
+                // ✨ 確保現金(1-1=0)不會干擾日變動邏輯
+                if (!isNaN(dayDiff) && !isCash) {
                     tDayChange += dayDiff * sh;
                 }
                 
@@ -1284,6 +1286,7 @@
                 const ddValueNum = highMark > 0 ? ((p.price - highMark) / highMark * 100) : 0;
                 const ddValue = ddValueNum.toFixed(2);
                 
+                // Drawdown 依舊採用整體權重（現金會成為緩衝）
                 tDrawdown += (m / tVal) * ddValueNum;
                 
                 let cyStr = localStorage.getItem('cy_'+s.id);
@@ -1295,9 +1298,9 @@
                 let ytdDisplay = ytdOpenNum > 0 ? `${ytdValue}%` : "-";
 
                 let reb = 0;
-                if (s.id === 'CASH' || s.id.includes('B')) {
+                if (isCash || s.id.includes('B')) {
                     if (safeAssetVal === 0) {
-                        if (s.id === 'CASH') reb = tVal * tSafe;
+                        if (isCash) reb = tVal * tSafe;
                     } else {
                         reb = (tVal * tSafe - safeAssetVal) * (m / safeAssetVal);
                     }
@@ -1308,8 +1311,6 @@
                 mktEl.innerText = Math.round(m).toLocaleString();
                 mktEl.className = isPrivate ? 'privacy-mask' : '';
                 
-                let isCash = s.id === 'CASH';
-
                 let pnlEl = document.getElementById('pnl_'+s.id);
                 if(pnlEl) {
                     pnlEl.innerHTML = isCash ? `<span style="color:#666;">-</span>` : `<span style="color:${pnlColor}; font-weight:bold;">${pnlDisplay}</span>`;
@@ -1355,7 +1356,9 @@
             }
         });
 
-        const pl = tVal - tCost, pPct = tCost > 0 ? (pl / tCost * 100).toFixed(2) : 0;
+        // ✨ V69.7 精準損益計算：僅用投資成本與投資市值計算
+        const pl = tInvestedVal - tInvestedCost;
+        const pPct = tInvestedCost > 0 ? (pl / tInvestedCost * 100).toFixed(2) : 0;
         
         let sumValEl = document.getElementById('sum-val');
         if(sumValEl) {
@@ -1363,10 +1366,11 @@
             sumValEl.className = isPrivate ? 'privacy-mask' : '';
         }
         
-        const prevTotalVal = tVal - tDayChange;
+        // ✨ V69.7 今日損益變動百分比：以昨日的投資市值為分母
+        const prevInvestedVal = tInvestedVal - tDayChange;
         let dayChangePct = "0.00";
-        if (prevTotalVal > 0 && !isNaN(tDayChange)) {
-            dayChangePct = (tDayChange / prevTotalVal * 100).toFixed(2);
+        if (prevInvestedVal > 0 && !isNaN(tDayChange)) {
+            dayChangePct = (tDayChange / prevInvestedVal * 100).toFixed(2);
         }
         
         let dayChangeColor = tDayChange >= 0 ? 'var(--red)' : 'var(--green)';
@@ -1411,7 +1415,6 @@
             const lpStr = (lVal/tVal*100).toFixed(1);
             const safeStr = (safeAssetVal/tVal*100).toFixed(1);
 
-            // ✨ V69.6 修改現況方塊排版與目標完全對照
             if(document.getElementById('actual-s')) {
                 let sEl = document.getElementById('actual-s');
                 sEl.innerText = spStr + "%";
@@ -1469,7 +1472,6 @@
                 actualSafeValEl.className = isPrivate ? 'privacy-mask' : '';
             }
 
-            // ✨ V69.6 修改圓餅圖調用，傳遞四個參數
             drawDonutChart(sVal, lVal, bVal, cVal);
 
             let spNum = Number(spStr) || 0;
