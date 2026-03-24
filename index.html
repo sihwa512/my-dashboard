@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V69.3 大局風控版</title>
+    <title>退休資產戰情室 V69.6 對照優化版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -70,17 +70,10 @@
         
         .bottom-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; margin-bottom: 20px; width: 100%; }
         .card-header-flex { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
-        .target-inputs-wrapper { display: flex; gap: 10px; width: 100%; margin-bottom: 15px; }
-        .target-inputs-wrapper > div { flex: 1; min-width: 0; }
-        .target-inputs-wrapper input { width: 100%; box-sizing: border-box; margin-top: 5px; }
+        .target-inputs-wrapper { display: flex; gap: 15px; width: 100%; margin-bottom: 10px; }
+        .target-inputs-wrapper > div { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; }
+        .target-inputs-wrapper input { width: 100%; max-width: 75px; box-sizing: border-box; }
         
-        .ratio-bar-container { width: 100%; height: 45px; background: #111; border-radius: 12px; overflow: hidden; display: flex; border: 2px solid #333; }
-        .part { height: 100%; transition: 1.2s cubic-bezier(0.18, 0.89, 0.32, 1.28); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.95rem; font-weight: bold; white-space: nowrap; overflow: hidden; }
-        .stock-part { background: linear-gradient(90deg, #007acc, #00d4ff); }
-        .lever-part { background: linear-gradient(90deg, #6272a4, #bd93f9); border-left: 1px solid rgba(0,0,0,0.5); border-right: 1px solid rgba(0,0,0,0.5); }
-        .bond-part { background: linear-gradient(90deg, #e67e22, #ff9f1c); }
-        .cash-part { background: linear-gradient(90deg, #00b09b, #96c93d); border-left: 1px solid rgba(0,0,0,0.5); }
-
         .btn-fetch { background: linear-gradient(135deg, #007acc, #00d4ff); color: white; padding: 18px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; font-size: 1.25rem; box-shadow: 0 6px 20px rgba(0, 122, 204, 0.4); transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-bottom: 25px; }
         .btn-fetch:active { transform: translateY(2px); box-shadow: none; }
         .btn-fetch:disabled { background: #555; color: #aaa; cursor: not-allowed; box-shadow: none; transform: none; } 
@@ -138,18 +131,17 @@
             @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 
             .bottom-cards-grid { grid-template-columns: 1fr; gap: 15px; }
-            .ratio-bar-container { height: 35px; }
-            .part { font-size: 0.85rem; letter-spacing: -0.5px; }
 
             .fire-stats-wrapper { flex-direction: column; align-items: stretch; gap: 12px; }
             .loan-inputs-wrapper { flex-direction: column; align-items: stretch; gap: 12px; }
+            #beta-display { font-size: 0.85rem !important; }
         }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V69.3</h2>
+        <h2>📊 綜合退休戰情室 V69.6</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="openHistoryLedgerModal()" style="border-color:var(--orange); color:var(--orange);">📜 交易紀錄</span>
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
@@ -241,19 +233,19 @@
             
             <div style="display:flex; justify-content:space-between; background:rgba(0, 212, 255, 0.05); padding:10px; border-radius:8px; margin-bottom:15px; text-align:center;">
                 <div style="flex:1; border-right: 1px dashed rgba(255,255,255,0.1);">
-                    <span style="color:#aaa; font-size:0.85rem;">現況 股票</span><br>
-                    <b id="actual-s" style="color:var(--blue); font-size:1.15rem;">-%</b><br>
-                    <small id="actual-s-val" style="color:#888; font-size:0.8rem;">$0</small>
+                    <small style="color:#aaa;">現況 股票</small>
+                    <b id="actual-s" style="color:var(--blue); font-size:0.95rem; font-weight:bold; margin-top:5px; display:block;">-%</b>
+                    <div id="actual-s-val" style="color:var(--blue); font-size:0.95rem; font-weight:bold; margin-top:3px;">$0</div>
                 </div>
                 <div style="flex:1; border-right: 1px dashed rgba(255,255,255,0.1);">
-                    <span style="color:#aaa; font-size:0.85rem;">現況 槓桿</span><br>
-                    <b id="actual-l" style="color:var(--purple); font-size:1.15rem;">-%</b><br>
-                    <small id="actual-l-val" style="color:#888; font-size:0.8rem;">$0</small>
+                    <small style="color:#aaa;">現況 槓桿</small>
+                    <b id="actual-l" style="color:var(--purple); font-size:0.95rem; font-weight:bold; margin-top:5px; display:block;">-%</b>
+                    <div id="actual-l-val" style="color:var(--purple); font-size:0.95rem; font-weight:bold; margin-top:3px;">$0</div>
                 </div>
                 <div style="flex:1;">
-                    <span style="color:#aaa; font-size:0.85rem;">現況 類現金</span><br>
-                    <b id="actual-safe" style="color:var(--green); font-size:1.15rem;">-%</b><br>
-                    <small id="actual-safe-val" style="color:#888; font-size:0.8rem;">$0</small>
+                    <small style="color:#aaa;">現況 類現金</small>
+                    <b id="actual-safe" style="color:var(--green); font-size:0.95rem; font-weight:bold; margin-top:5px; display:block;">-%</b>
+                    <div id="actual-safe-val" style="color:var(--green); font-size:0.95rem; font-weight:bold; margin-top:3px;">$0</div>
                 </div>
             </div>
 
@@ -265,26 +257,25 @@
             <div class="target-inputs-wrapper">
                 <div>
                     <small style="color:#aaa; white-space:nowrap;">股票(手)</small>
-                    <input type="number" id="target-s" value="40" style="background:#1b1e2e; border:1px solid var(--blue); color:var(--blue); font-weight:bold; border-radius:6px; padding:6px;" oninput="updateTargets()">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:2px; margin-top:5px;">
+                        <input type="number" id="target-s" value="40" style="background:#1b1e2e; border:1px solid var(--blue); color:var(--blue); font-weight:bold; border-radius:6px; padding:6px;" oninput="updateTargets()"><span style="color:#aaa;">%</span>
+                    </div>
+                    <div id="target-s-amt" style="color:var(--blue); font-size:0.95rem; font-weight:bold; margin-top:8px;">$0</div>
                 </div>
                 <div>
                     <small style="color:#aaa; white-space:nowrap;">正2(手)</small>
-                    <input type="number" id="target-l" value="30" style="background:#1b1e2e; border:1px solid var(--purple); color:var(--purple); font-weight:bold; border-radius:6px; padding:6px;" oninput="updateTargets()">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:2px; margin-top:5px;">
+                        <input type="number" id="target-l" value="30" style="background:#1b1e2e; border:1px solid var(--purple); color:var(--purple); font-weight:bold; border-radius:6px; padding:6px;" oninput="updateTargets()"><span style="color:#aaa;">%</span>
+                    </div>
+                    <div id="target-l-amt" style="color:var(--purple); font-size:0.95rem; font-weight:bold; margin-top:8px;">$0</div>
                 </div>
                 <div>
-                    <small style="color:#aaa; white-space:nowrap;">債券(手)</small>
-                    <input type="number" id="target-b" value="20" style="background:#1b1e2e; border:1px solid var(--orange); color:var(--orange); font-weight:bold; border-radius:6px; padding:6px;" oninput="updateTargets()">
+                    <small style="color:#aaa; white-space:nowrap;">類現金(自)</small>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:2px; margin-top:5px;">
+                        <input type="number" id="target-safe" value="30" class="input-readonly" style="background:#1a1c23; border:1px dashed #555; color:var(--green); font-weight:bold; border-radius:6px; padding:6px;" readonly><span style="color:#aaa;">%</span>
+                    </div>
+                    <div id="target-safe-amt" style="color:var(--green); font-size:0.95rem; font-weight:bold; margin-top:8px;">$0</div>
                 </div>
-                <div>
-                    <small style="color:#aaa; white-space:nowrap;">現金(自)</small>
-                    <input type="number" id="target-c" value="10" class="input-readonly" style="background:#1a1c23; border:1px dashed #555; color:var(--green); font-weight:bold; border-radius:6px; padding:6px;" readonly>
-                </div>
-            </div>
-            <div class="ratio-bar-container">
-                <div id="stock-bar" class="part stock-part"></div>
-                <div id="lever-bar" class="part lever-part"></div>
-                <div id="bond-bar" class="part bond-part"></div>
-                <div id="cash-bar" class="part cash-part"></div>
             </div>
         </div>
         
@@ -407,7 +398,7 @@
                 <button onclick="closeHistoryLedgerModal()" style="background:none; border:none; color:#aaa; font-size:1.5rem; cursor:pointer;">✖</button>
             </div>
             <p style="font-size:0.85rem; color:#888; line-height:1.4; margin-bottom:15px;">
-                💡 提示：此處為您的個人交易流水帳。若您刪除此處的紀錄，<b>不會</b>自動還原主畫面的庫存數據。如需修正庫存與成本，請於主畫面點擊「⚙️管理股票池」修改。
+                💡 提示：此處為您的個人交易流水帳。若您刪除此處的紀錄，<b>不會</b>自動還原主畫面的庫存數據。如需修正庫存與成本，請於主畫面點擊「⚙️管理股票池」修改.
             </p>
             <div id="history-ledger-list" class="history-list">
                 </div>
@@ -494,9 +485,6 @@
             
             let savedL = localStorage.getItem('target_l');
             if(savedL !== null && document.getElementById('target-l')) document.getElementById('target-l').value = savedL;
-            
-            let savedB = localStorage.getItem('target_b');
-            if(savedB !== null && document.getElementById('target-b')) document.getElementById('target-b').value = savedB;
 
             let savedSwr = localStorage.getItem('swr_rate');
             if(savedSwr !== null && document.getElementById('swr-rate')) document.getElementById('swr-rate').value = savedSwr;
@@ -662,19 +650,16 @@
     function updateTargets() { 
         let elS = document.getElementById('target-s');
         let elL = document.getElementById('target-l');
-        let elB = document.getElementById('target-b');
-        let elC = document.getElementById('target-c');
-        if(elS && elL && elB && elC) {
+        let elC = document.getElementById('target-safe');
+        if(elS && elL && elC) {
             let s = Number(elS.value) || 0; 
             let l = Number(elL.value) || 0; 
-            let b = Number(elB.value) || 0;
-            let c = 100 - s - l - b;
-            if (c < 0) c = 0;
-            elC.value = c.toFixed(0); 
+            let safe = 100 - s - l;
+            if (safe < 0) safe = 0;
+            elC.value = safe.toFixed(0); 
             
             localStorage.setItem('target_s', s);
             localStorage.setItem('target_l', l);
-            localStorage.setItem('target_b', b);
         }
         calculate(); 
     }
@@ -1168,6 +1153,7 @@
         });
     }
 
+    // ✨ V69.6 優化：圓餅圖不再合併「類現金」，而是單獨展示「債券」和「現金」
     function drawDonutChart(sVal, lVal, bVal, cVal) {
         if (typeof Chart === 'undefined') return;
         const dCtx = document.getElementById('donutChart');
@@ -1177,10 +1163,13 @@
         donutChartObj = new Chart(dCtx.getContext('2d'), {
             type: 'doughnut',
             data: {
-                labels: ['股票', '正2', '債券', '現金'],
+                // labels 增加「債券」和「現金」
+                labels: ['股票', '槓桿', '債券', '現金'],
                 datasets: [{
+                    // data 傳遞四個單獨的值
                     data: [sVal, lVal, bVal, cVal],
-                    backgroundColor: ['#00d4ff', '#bd93f9', '#ff9f1c', '#00ff88'],
+                    // backgroundColor 增加一種顏色給債券
+                    backgroundColor: ['#00d4ff', '#bd93f9', '#ff9f1c', '#00ff88'], // 橙色為債券
                     borderWidth: 0,
                     hoverOffset: 6
                 }]
@@ -1227,11 +1216,14 @@
         
         let targetSEl = document.getElementById('target-s');
         let targetLEl = document.getElementById('target-l');
-        let targetBEl = document.getElementById('target-b');
         const ts = targetSEl ? (Number(targetSEl.value)/100) : 0.4;
         const tl = targetLEl ? (Number(targetLEl.value)/100) : 0.3;
-        const tb = targetBEl ? (Number(targetBEl.value)/100) : 0.2;
-        const tc = 1 - ts - tl - tb;
+        const tSafe = 1 - ts - tl;
+
+        // 計算目標金額並顯示 (V69.5 新增)
+        let targetSAmtEl = document.getElementById('target-s-amt');
+        let targetLAmtEl = document.getElementById('target-l-amt');
+        let targetSafeAmtEl = document.getElementById('target-safe-amt');
 
         displayStocks.forEach(s => {
             const sh = Number(localStorage.getItem('sh_'+s.id)) || 0, p = currentPrices[s.id];
@@ -1243,6 +1235,13 @@
                 else sVal += m;
             }
         });
+
+        // 顯示目標金額 (V69.5)
+        if (targetSAmtEl) { targetSAmtEl.innerText = "$" + Math.round(tVal * ts).toLocaleString(); targetSAmtEl.className = isPrivate ? 'privacy-mask' : ''; }
+        if (targetLAmtEl) { targetLAmtEl.innerText = "$" + Math.round(tVal * tl).toLocaleString(); targetLAmtEl.className = isPrivate ? 'privacy-mask' : ''; }
+        if (targetSafeAmtEl) { targetSafeAmtEl.innerText = "$" + Math.round(tVal * tSafe).toLocaleString(); targetSafeAmtEl.className = isPrivate ? 'privacy-mask' : ''; }
+
+        let safeAssetVal = bVal + cVal; 
 
         displayStocks.forEach(s => {
             const sh = Number(localStorage.getItem('sh_'+s.id)) || 0, co = Number(localStorage.getItem('co_'+s.id)) || 0, p = currentPrices[s.id];
@@ -1296,8 +1295,13 @@
                 let ytdDisplay = ytdOpenNum > 0 ? `${ytdValue}%` : "-";
 
                 let reb = 0;
-                if (s.id === 'CASH') reb = (tVal*tc-cVal)*(m/(cVal||1));
-                else if (s.id.includes('B')) reb = (tVal*tb-bVal)*(m/(bVal||1));
+                if (s.id === 'CASH' || s.id.includes('B')) {
+                    if (safeAssetVal === 0) {
+                        if (s.id === 'CASH') reb = tVal * tSafe;
+                    } else {
+                        reb = (tVal * tSafe - safeAssetVal) * (m / safeAssetVal);
+                    }
+                }
                 else if (s.id.includes('L')) reb = (tVal*tl-lVal)*(m/(lVal||1));
                 else reb = (tVal*ts-sVal)*(m/(sVal||1));
 
@@ -1405,42 +1409,67 @@
         if (tVal > 0 && !isNaN(tVal)) {
             const spStr = (sVal/tVal*100).toFixed(1);
             const lpStr = (lVal/tVal*100).toFixed(1);
-            const bpStr = (bVal/tVal*100).toFixed(1);
-            const cpStr = (cVal/tVal*100).toFixed(1);
-            
-            const sb = document.getElementById('stock-bar');
-            const lb = document.getElementById('lever-bar');
-            const bb = document.getElementById('bond-bar');
-            const cb = document.getElementById('cash-bar');
-            if(sb) { sb.style.width = spStr+'%'; sb.innerText = `股 ${spStr}%`; }
-            if(lb) { lb.style.width = lpStr+'%'; lb.innerText = `正 ${lpStr}%`; }
-            if(bb) { bb.style.width = bpStr+'%'; bb.innerText = `債 ${bpStr}%`; }
-            if(cb) { cb.style.width = cpStr+'%'; cb.innerText = `現 ${cpStr}%`; }
+            const safeStr = (safeAssetVal/tVal*100).toFixed(1);
 
-            // ✨ V69.3 更新現況大分類佔比數字與金額 (含馬賽克)
-            if(document.getElementById('actual-s')) document.getElementById('actual-s').innerText = spStr + "%";
+            // ✨ V69.6 修改現況方塊排版與目標完全對照
+            if(document.getElementById('actual-s')) {
+                let sEl = document.getElementById('actual-s');
+                sEl.innerText = spStr + "%";
+                sEl.style.fontSize = "0.95rem";
+                sEl.style.fontWeight = "bold";
+                sEl.style.marginTop = "5px";
+                sEl.style.display = "block";
+                sEl.previousElementSibling.outerHTML = '<small style="color:#aaa;">現況 股票</small>';
+            }
             let actualSValEl = document.getElementById('actual-s-val');
             if(actualSValEl) {
                 actualSValEl.innerText = "$" + Math.round(sVal).toLocaleString();
+                actualSValEl.style.fontSize = "0.95rem";
+                actualSValEl.style.color = "var(--blue)";
+                actualSValEl.style.fontWeight = "bold";
+                actualSValEl.style.marginTop = "3px";
                 actualSValEl.className = isPrivate ? 'privacy-mask' : '';
             }
 
-            if(document.getElementById('actual-l')) document.getElementById('actual-l').innerText = lpStr + "%";
+            if(document.getElementById('actual-l')) {
+                let lEl = document.getElementById('actual-l');
+                lEl.innerText = lpStr + "%";
+                lEl.style.fontSize = "0.95rem";
+                lEl.style.fontWeight = "bold";
+                lEl.style.marginTop = "5px";
+                lEl.style.display = "block";
+                lEl.previousElementSibling.outerHTML = '<small style="color:#aaa;">現況 槓桿</small>';
+            }
             let actualLValEl = document.getElementById('actual-l-val');
             if(actualLValEl) {
                 actualLValEl.innerText = "$" + Math.round(lVal).toLocaleString();
+                actualLValEl.style.fontSize = "0.95rem";
+                actualLValEl.style.color = "var(--purple)";
+                actualLValEl.style.fontWeight = "bold";
+                actualLValEl.style.marginTop = "3px";
                 actualLValEl.className = isPrivate ? 'privacy-mask' : '';
             }
 
-            let safeTotalPct = (Number(bpStr) || 0) + (Number(cpStr) || 0);
-            if(document.getElementById('actual-safe')) document.getElementById('actual-safe').innerText = safeTotalPct.toFixed(1) + "%";
+            if(document.getElementById('actual-safe')) {
+                let safeEl = document.getElementById('actual-safe');
+                safeEl.innerText = safeStr + "%";
+                safeEl.style.fontSize = "0.95rem";
+                safeEl.style.fontWeight = "bold";
+                safeEl.style.marginTop = "5px";
+                safeEl.style.display = "block";
+                safeEl.previousElementSibling.outerHTML = '<small style="color:#aaa;">現況 類現金</small>';
+            }
             let actualSafeValEl = document.getElementById('actual-safe-val');
-            let safeAssetVal = bVal + cVal;
             if(actualSafeValEl) {
                 actualSafeValEl.innerText = "$" + Math.round(safeAssetVal).toLocaleString();
+                actualSafeValEl.style.fontSize = "0.95rem";
+                actualSafeValEl.style.color = "var(--green)";
+                actualSafeValEl.style.fontWeight = "bold";
+                actualSafeValEl.style.marginTop = "3px";
                 actualSafeValEl.className = isPrivate ? 'privacy-mask' : '';
             }
 
+            // ✨ V69.6 修改圓餅圖調用，傳遞四個參數
             drawDonutChart(sVal, lVal, bVal, cVal);
 
             let spNum = Number(spStr) || 0;
@@ -1448,7 +1477,6 @@
             let currentBeta = (spNum/100 * 1.0) + (lpNum/100 * 2.0); 
             let targetBeta = (ts * 1.0) + (tl * 2.0);
             
-            // ✨ V69.3 當前與目標 Beta 分離標示
             let currentBetaEl = document.getElementById('current-beta-display');
             if(currentBetaEl) currentBetaEl.innerHTML = `當前 Beta: <span style="color:#fff; font-weight:bold;">${currentBeta.toFixed(2)}</span>`;
             
