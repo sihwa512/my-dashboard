@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V70.2 自動稅費版</title>
+    <title>退休資產戰情室 V70.3 智能鎖定版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -103,7 +103,6 @@
         .trade-input-group input { width: 100%; box-sizing: border-box; background: #0f111a; border: 1px solid #555; color: #fff; padding: 12px; border-radius: 8px; font-size: 1.3rem; }
         .trade-input-group input:focus { border-color: var(--blue); }
         
-        /* ✨ 新增折扣設定的輸入框樣式 */
         .discount-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 8px; border: 1px solid #333; }
         .discount-wrapper label { margin: 0; font-size: 0.95rem; color: #aaa; }
         .discount-wrapper input { width: 60px; font-size: 1rem; padding: 4px; text-align: center; margin: 0; }
@@ -149,7 +148,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V70.2</h2>
+        <h2>📊 綜合退休戰情室 V70.3</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="openHistoryLedgerModal()" style="border-color:var(--orange); color:var(--orange);">📜 交易紀錄</span>
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
@@ -524,7 +523,6 @@
             let savedSwr = localStorage.getItem('swr_rate');
             if(savedSwr !== null && document.getElementById('swr-rate')) document.getElementById('swr-rate').value = savedSwr;
 
-            // ✨ 載入儲存的折扣設定
             let savedDiscount = localStorage.getItem('trade_discount_v70');
             if(savedDiscount !== null && document.getElementById('trade-discount')) {
                 document.getElementById('trade-discount').value = savedDiscount;
@@ -602,7 +600,8 @@
         let keysToRemove = [];
         for(let i=0; i<localStorage.length; i++) {
             let key = localStorage.key(i);
-            if (key.startsWith('cp_') || key.startsWith('auto_pc_') || key.startsWith('eod_pc_') || key.startsWith('eod_date_')) {
+            // v70.3 更新：清除新的 key 格式
+            if (key.startsWith('cp_') || key.startsWith('smart_pc_') || key.startsWith('last_eod_') || key.startsWith('auto_pc_') || key.startsWith('eod_pc_') || key.startsWith('eod_date_')) {
                 keysToRemove.push(key);
             }
         }
@@ -623,7 +622,7 @@
     }
 
     function factoryReset() {
-        if(confirm("⚠️ 警告：您即將清除「所有」的股票、現金、借款與歷史紀錄！\n\n建議您先點擊上方 💾 備份資料。\n\n確定要全部清除嗎？")) {
+        if(confirm("⚠️ 警告：您即即將清除「所有」的股票、現金、借款與歷史紀錄！\n\n建議您先點擊上方 💾 備份資料。\n\n確定要全部清除嗎？")) {
             if(confirm("⛔ 最後確認：資料清除後【完全無法復原】！\n真的要清空嗎？")) {
                 localStorage.clear();
                 alert("✅ 所有資料已清空，系統將恢復預設狀態。");
@@ -747,7 +746,6 @@
         calculate();
     }
 
-    // ✨ V70.2 自動計算稅金與手續費
     function autoCalculateFee() {
         if (currentTradeId === 'CASH') {
             document.getElementById('trade-fee').value = 0;
@@ -758,7 +756,6 @@
         let px = Number(document.getElementById('trade-price').value) || 0;
         let disc = Number(document.getElementById('trade-discount').value) || 1;
         
-        // 儲存折扣設定
         localStorage.setItem('trade_discount_v70', disc);
         
         if (sh <= 0 || px <= 0) {
@@ -768,19 +765,17 @@
         
         let value = sh * px;
         
-        // 1. 券商手續費 (0.1425% * 折扣)，未滿20元以20元計
         let fee = Math.round(value * 0.001425 * disc);
         if (fee > 0 && fee < 20) fee = 20; 
         
-        // 2. 證交稅 (僅賣出收取)
         let tax = 0;
         if (currentTradeType === 'sell') {
             if (currentTradeId.includes('B')) {
-                tax = 0; // 債券ETF免徵
+                tax = 0;
             } else if (currentTradeId.startsWith('00')) {
-                tax = Math.round(value * 0.001); // ETF 0.1%
+                tax = Math.round(value * 0.001);
             } else {
-                tax = Math.round(value * 0.003); // 一般股票 0.3%
+                tax = Math.round(value * 0.003);
             }
         }
         
@@ -818,7 +813,7 @@
         currentTradeType = type;
         document.getElementById('tab-buy').className = 'trade-tab' + (type === 'buy' ? ' active-buy' : '');
         document.getElementById('tab-sell').className = 'trade-tab' + (type === 'sell' ? ' active-sell' : '');
-        autoCalculateFee(); // 切換買賣時重新計算(因為稅金不同)
+        autoCalculateFee(); 
     }
 
     function submitTrade() {
@@ -1187,47 +1182,54 @@
         }
     }
 
+    // 🏆 V70.3 新版 Daily Lock 智能快取
     function processSmartRollover() {
+        // 確保使用台灣時間
         let twTime = new Date().toLocaleString("en-US", {timeZone: "Asia/Taipei"});
         let d = new Date(twTime);
         let todayStr = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
-        let timeNum = d.getHours() * 100 + d.getMinutes(); 
+        let timeNum = d.getHours() * 100 + d.getMinutes();
 
         displayStocks.forEach(s => {
             if (s.id === 'CASH') return;
             let p = currentPrices[s.id];
             if (!p || p.price <= 0) return;
 
-            let autoPcKey = 'auto_pc_' + todayStr + '_' + s.id;
-            let autoPc = localStorage.getItem(autoPcKey);
+            // 1. 取得「今日專屬」的昨收鎖定鑰匙
+            let todayLockKey = 'smart_pc_' + todayStr + '_' + s.id;
+            let lockedPc = localStorage.getItem(todayLockKey);
 
-            if (timeNum < 900) {
-                autoPc = p.price;
-                localStorage.setItem(autoPcKey, autoPc);
-            }
-
-            let eodPcKey = 'eod_pc_' + s.id;
-            let eodDateKey = 'eod_date_' + s.id;
-            if (timeNum >= 1330) {
-                localStorage.setItem(eodPcKey, p.price);
-                localStorage.setItem(eodDateKey, todayStr);
-            }
-
-            p.smartPcVal = 0;
-            p.smartPcSource = "";
-            
-            if (autoPc !== null && autoPc !== "") {
-                p.smartPcVal = parseFloat(autoPc);
-                p.smartPcSource = "morning_lock";
-            } else {
-                let eodDate = localStorage.getItem(eodDateKey);
-                if (eodDate && eodDate !== todayStr) {
-                    let eodPc = localStorage.getItem(eodPcKey);
-                    if (eodPc) {
-                        p.smartPcVal = parseFloat(eodPc);
-                        p.smartPcSource = "yesterday_eod";
+            // 2. 如果今天還沒建立鎖定，立刻嘗試建立
+            if (!lockedPc) {
+                if (timeNum < 900) {
+                    // 情況 A：早盤開盤前 (09:00 前打開)，目前的最新價就是絕對正確的昨收
+                    localStorage.setItem(todayLockKey, p.price);
+                    lockedPc = p.price;
+                } else {
+                    // 情況 B：超過 09:00 才打開，去尋找有沒有「歷史尾盤」留下來的快取
+                    let lastEodDate = localStorage.getItem('last_eod_date_' + s.id);
+                    let lastEodPrice = localStorage.getItem('last_eod_price_' + s.id);
+                    
+                    // 只要歷史尾盤的紀錄日期「不是今天」，代表那是前一個交易日的收盤價，立刻繼承！
+                    if (lastEodDate && lastEodDate !== todayStr && lastEodPrice) {
+                        localStorage.setItem(todayLockKey, lastEodPrice);
+                        lockedPc = lastEodPrice;
                     }
                 }
+            }
+
+            // 3. 每天台股尾盤 (13:30 以後)，偷偷記錄今日的最新收盤價，留給「明天的情況 B」備用
+            if (timeNum >= 1330) {
+                localStorage.setItem('last_eod_price_' + s.id, p.price);
+                localStorage.setItem('last_eod_date_' + s.id, todayStr);
+            }
+
+            // 4. 正式套用智能鎖定
+            p.smartPcVal = 0;
+            p.smartPcSource = "";
+            if (lockedPc) {
+                p.smartPcVal = parseFloat(lockedPc);
+                p.smartPcSource = "smart_lock"; // 套用成功時，最新股價下方會顯示紫色的 (已套用智能鎖定)
             }
         });
     }
