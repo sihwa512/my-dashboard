@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V70.4 現金緩衝版</title>
+    <title>退休資產戰情室 V70.5 宏觀淨值版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -148,7 +148,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V70.4 現金緩衝版</h2>
+        <h2>📊 綜合退休戰情室 V70.5 宏觀淨值版</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="openHistoryLedgerModal()" style="border-color:var(--orange); color:var(--orange);">📜 交易紀錄</span>
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
@@ -163,11 +163,14 @@
         <div class="summary-card" style="border: 1px solid var(--slate);">
             <span>💵 USD/TWD 匯率</span><br><b id="usd-twd-val" style="color:var(--orange)">加載中...</b>
         </div>
+        <div class="summary-card" style="border: 1px solid #555; background: linear-gradient(145deg, #1b1e2e, #11131c);">
+            <span style="color:#888;">昨日結算總值</span><br><b id="yesterday-val" style="color:#ccc">-</b>
+        </div>
         <div class="summary-card" style="border: 1px solid var(--blue);">
-            <span>資產總市值</span><br><b id="sum-val" style="color:var(--blue)">-</b>
+            <span>今日總市值</span><br><b id="sum-val" style="color:var(--blue)">-</b>
         </div>
         <div class="summary-card" id="sum-change-card">
-            <span>今日損益跳動</span><br><b id="sum-change">-</b>
+            <span>宏觀今日損益</span><br><b id="sum-change">-</b>
         </div>
         
         <div class="summary-card" id="sum-pl-card">
@@ -264,7 +267,7 @@
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 5px;">
-                <span style="font-size:0.9rem; color:#aaa;">🛠️ 手手動調整目標佔比：</span>
+                <span style="font-size:0.9rem; color:#aaa;">🛠️ 手動調整目標佔比：</span>
                 <span id="target-beta-display" style="font-size:0.9rem; color:var(--orange); font-weight:bold; background:rgba(255, 159, 28, 0.1); padding:2px 6px; border-radius:4px;">目標 Beta: -</span>
             </div>
 
@@ -1326,7 +1329,6 @@
 
         let safeAssetVal = bVal + cVal; 
 
-        // 🎯 V70.4 核心升級：現金桶提領優先序邏輯
         let safeDiff = (tVal * tSafe) - safeAssetVal;
         let cashRebTotal = 0;
         let bondRebTotal = 0;
@@ -1344,6 +1346,32 @@
                 cashRebTotal = safeDiff * (cVal / safeAssetVal);
                 bondRebTotal = safeDiff * (bVal / safeAssetVal);
             }
+        }
+
+        // 💡 V70.5 提取昨日總市值
+        let yesterdayTotalVal = 0;
+        try {
+            let hStored = localStorage.getItem('equityHistory');
+            if (hStored && hStored !== "undefined") {
+                let historyData = JSON.parse(hStored);
+                let keys = Object.keys(historyData).sort();
+                
+                // 找到最後一個「不是今天」的紀錄
+                let twTime = new Date().toLocaleString("en-US", {timeZone: "Asia/Taipei"});
+                let todayDate = new Date(twTime).toISOString().split('T')[0];
+                let pastKeys = keys.filter(k => k !== todayDate);
+                
+                if (pastKeys.length > 0) {
+                    let lastKey = pastKeys[pastKeys.length - 1];
+                    yesterdayTotalVal = historyData[lastKey];
+                }
+            }
+        } catch(e) {}
+
+        let ytdValEl = document.getElementById('yesterday-val');
+        if(ytdValEl) {
+            ytdValEl.innerText = yesterdayTotalVal > 0 ? Math.round(yesterdayTotalVal).toLocaleString() : "尚無紀錄";
+            ytdValEl.className = isPrivate ? 'privacy-mask' : '';
         }
 
         displayStocks.forEach(s => {
@@ -1368,11 +1396,6 @@
 
                 if (isNaN(pc) || pc === 0) pc = p.price; 
                 if (isNaN(pc)) pc = 0; 
-                
-                let dayDiff = p.price - pc;
-                if (!isNaN(dayDiff) && !isCash) {
-                    tDayChange += dayDiff * sh;
-                }
                 
                 let pnlValue = (p.price - co) * sh;
                 let pnlColor = pnlValue >= 0 ? 'var(--red)' : 'var(--green)';
@@ -1493,24 +1516,31 @@
         let sumPlCard = document.getElementById('sum-pl-card');
         if(sumPlCard) sumPlCard.style.border = `1px solid ${principal > 0 ? (truePnL>=0?'var(--red)':'var(--green)') : '#333'}`;
         
-        let tInvestedVal = sVal + lVal + bVal; 
-        const prevInvestedVal = tInvestedVal - tDayChange;
+        // 💡 V70.5 核心：宏觀今日損益計算 (今日總值 - 昨日總值)
+        let macroDayChange = 0;
         let dayChangePct = "0.00";
-        if (prevInvestedVal > 0 && !isNaN(tDayChange)) {
-            dayChangePct = (tDayChange / prevInvestedVal * 100).toFixed(2);
+        
+        if (yesterdayTotalVal > 0) {
+            macroDayChange = tVal - yesterdayTotalVal;
+            dayChangePct = (macroDayChange / yesterdayTotalVal * 100).toFixed(2);
         }
         
-        let dayChangeColor = tDayChange >= 0 ? 'var(--red)' : 'var(--green)';
-        let dayChangeSign = tDayChange >= 0 ? '+' : '';
-        let safeDayChange = isNaN(tDayChange) ? 0 : tDayChange;
+        let dayChangeColor = macroDayChange >= 0 ? 'var(--red)' : 'var(--green)';
+        let dayChangeSign = macroDayChange >= 0 ? '+' : '';
         
         let sumChangeEl = document.getElementById('sum-change');
         if(sumChangeEl) {
-            sumChangeEl.innerHTML = `<span style="color:${dayChangeColor}">${dayChangeSign}${Math.round(safeDayChange).toLocaleString()} <span style="font-size:0.95rem;">(${dayChangeSign}${dayChangePct}%)</span></span>`;
+            if (yesterdayTotalVal > 0) {
+                sumChangeEl.innerHTML = `<span style="color:${dayChangeColor}">${dayChangeSign}${Math.round(macroDayChange).toLocaleString()} <span style="font-size:0.95rem;">(${dayChangeSign}${dayChangePct}%)</span></span>`;
+            } else {
+                sumChangeEl.innerHTML = `<span style="color:#888; font-size:0.9rem;">無昨日資料，請等待明日結算</span>`;
+            }
             sumChangeEl.className = isPrivate ? 'privacy-mask' : '';
         }
         let sumChangeCard = document.getElementById('sum-change-card');
-        if(sumChangeCard) sumChangeCard.style.border = `1px solid ${dayChangeColor}`;
+        if(sumChangeCard) {
+            sumChangeCard.style.border = `1px solid ${yesterdayTotalVal > 0 ? dayChangeColor : '#555'}`;
+        }
         
         let ddColor = 'var(--green)';
         let ddIcon = '🌿';
@@ -1652,7 +1682,8 @@
             }
 
             try {
-                let todayDate = new Date().toISOString().split('T')[0]; 
+                let twTime = new Date().toLocaleString("en-US", {timeZone: "Asia/Taipei"});
+                let todayDate = new Date(twTime).toISOString().split('T')[0]; 
                 let historyData = {};
                 let hStored = localStorage.getItem('equityHistory');
                 if (hStored && hStored !== "undefined") {
@@ -1665,10 +1696,13 @@
                     }
                 }
 
+                // 若完全無歷史紀錄，建立一筆虛擬昨日資料
                 if (Object.keys(historyData).length === 0) {
-                    let yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-                    let safeChangeForHistory = isNaN(tDayChange) ? 0 : tDayChange;
-                    historyData[yesterday] = Math.round(tVal - safeChangeForHistory);
+                    let d = new Date(twTime);
+                    d.setDate(d.getDate() - 1);
+                    let yesterday = d.toISOString().split('T')[0];
+                    // 隨便給一個略低的數字當作起始點，讓圖表能畫出來
+                    historyData[yesterday] = Math.round(tVal * 0.99); 
                 }
                 
                 historyData[todayDate] = Math.round(tVal);
