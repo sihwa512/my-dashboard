@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V71.0 財務自由闖關版</title>
+    <title>退休資產戰情室 V71.1 闖關優化版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -23,17 +23,25 @@
         .summary-card b { font-size: 1.6rem; display: block; margin-top: 8px; font-family: 'Consolas', monospace; }
         small { font-size: 0.9rem; } 
         
-        /* 🏆 闖關進度條樣式 */
+        /* 🏆 重新設計的闖關進度條樣式 */
         .progress-section { background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #444; }
         .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .progress-bar-container { position: relative; height: 12px; background: #333; border-radius: 6px; margin: 30px 0 10px 0; }
+        .progress-bar-container { position: relative; height: 12px; background: #333; border-radius: 6px; margin: 45px 0 60px 0; } /* 增加上下 margin 容納文字 */
         .progress-fill { position: absolute; height: 100%; background: linear-gradient(90deg, var(--blue), var(--green)); border-radius: 6px; transition: width 1s ease-in-out; }
-        .milestone-marker { position: absolute; top: -25px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        .milestone-dot { width: 14px; height: 14px; background: #555; border: 2px solid var(--bg); border-radius: 50%; z-index: 2; transition: 0.3s; }
-        .milestone-dot.reached { background: var(--green); box-shadow: 0 0 10px var(--green); }
-        .milestone-label { font-size: 0.75rem; color: #888; white-space: nowrap; transition: 0.3s; }
-        .milestone-label.reached { color: #fff; font-weight: bold; }
-        .milestone-target { position: absolute; top: 20px; font-size: 0.7rem; color: #666; transform: translateX(-50%); }
+        
+        /* 關鍵：利用絕對定位與 transform，讓圓點精準落在 bar 上 */
+        .milestone-marker { position: absolute; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; z-index: 5; }
+        .milestone-dot { width: 16px; height: 16px; background: #252836; border: 2px solid #555; border-radius: 50%; transition: 0.3s; box-sizing: border-box; }
+        .milestone-dot.reached { background: var(--green); border-color: #fff; box-shadow: 0 0 10px var(--green); }
+        
+        /* 文字往上飄 */
+        .milestone-label { position: absolute; bottom: 100%; margin-bottom: 12px; font-size: 0.85rem; color: #888; white-space: nowrap; transition: 0.3s; }
+        .milestone-label.reached { color: var(--green); font-weight: bold; }
+        
+        /* 數據往下飄 */
+        .milestone-data { position: absolute; top: 100%; margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .milestone-target { font-size: 0.9rem; color: var(--orange); font-weight: bold; line-height: 1; }
+        .milestone-amt { font-size: 0.8rem; color: #aaa; white-space: nowrap; line-height: 1; }
 
         .principal-input-wrapper { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 5px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 6px; }
         .principal-input-wrapper input { width: 90px; background: transparent; border: none; border-bottom: 1px dashed #555; color: #fff; text-align: center; font-size: 0.95rem; font-weight: bold; padding: 2px; outline: none; border-radius: 0; }
@@ -154,7 +162,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V71.0 🏆</h2>
+        <h2>📊 綜合退休戰情室 V71.1 🏆</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="openHistoryLedgerModal()" style="border-color:var(--orange); color:var(--orange);">📜 交易紀錄</span>
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
@@ -203,12 +211,55 @@
         </div>
         <div class="progress-bar-container">
             <div id="progress-fill" class="progress-fill" style="width: 0%;"></div>
-            <div class="milestone-marker" style="left: 0%;"><div class="milestone-dot reached"></div><div class="milestone-label reached">起點</div></div>
-            <div id="m1" class="milestone-marker" style="left: 20%;"><div class="milestone-dot"></div><div class="milestone-label">脫離貧窮</div><div class="milestone-target" id="m1-t">5x</div></div>
-            <div id="m2" class="milestone-marker" style="left: 40%;"><div class="milestone-dot"></div><div class="milestone-label">基本保障</div><div class="milestone-target" id="m2-t">10x</div></div>
-            <div id="m3" class="milestone-marker" style="left: 60%;"><div class="milestone-dot"></div><div class="milestone-label">防禦達成</div><div class="milestone-target" id="m3-t">15x</div></div>
-            <div id="m4" class="milestone-marker" style="left: 80%;"><div class="milestone-dot"></div><div class="milestone-label">半自由</div><div class="milestone-target" id="m4-t">20x</div></div>
-            <div id="m5" class="milestone-marker" style="left: 100%;"><div class="milestone-dot"></div><div class="milestone-label">完全自由</div><div class="milestone-target" id="m5-t">25x</div></div>
+            
+            <div class="milestone-marker" style="left: 0%;">
+                <div class="milestone-label reached">起點</div>
+                <div class="milestone-dot reached"></div>
+                <div class="milestone-data">
+                    <div class="milestone-target" style="color:#aaa;">0x</div>
+                    <div class="milestone-amt">$0</div>
+                </div>
+            </div>
+            <div id="m1" class="milestone-marker" style="left: 20%;">
+                <div class="milestone-label">脫離貧窮</div>
+                <div class="milestone-dot"></div>
+                <div class="milestone-data">
+                    <div class="milestone-target" id="m1-t">5x</div>
+                    <div class="milestone-amt" id="m1-a">$0</div>
+                </div>
+            </div>
+            <div id="m2" class="milestone-marker" style="left: 40%;">
+                <div class="milestone-label">基本保障</div>
+                <div class="milestone-dot"></div>
+                <div class="milestone-data">
+                    <div class="milestone-target" id="m2-t">10x</div>
+                    <div class="milestone-amt" id="m2-a">$0</div>
+                </div>
+            </div>
+            <div id="m3" class="milestone-marker" style="left: 60%;">
+                <div class="milestone-label">防禦達成</div>
+                <div class="milestone-dot"></div>
+                <div class="milestone-data">
+                    <div class="milestone-target" id="m3-t">15x</div>
+                    <div class="milestone-amt" id="m3-a">$0</div>
+                </div>
+            </div>
+            <div id="m4" class="milestone-marker" style="left: 80%;">
+                <div class="milestone-label">半自由</div>
+                <div class="milestone-dot"></div>
+                <div class="milestone-data">
+                    <div class="milestone-target" id="m4-t">20x</div>
+                    <div class="milestone-amt" id="m4-a">$0</div>
+                </div>
+            </div>
+            <div id="m5" class="milestone-marker" style="left: 100%;">
+                <div class="milestone-label">完全自由</div>
+                <div class="milestone-dot"></div>
+                <div class="milestone-data">
+                    <div class="milestone-target" id="m5-t">25x</div>
+                    <div class="milestone-amt" id="m5-a">$0</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -244,7 +295,7 @@
         </div>
         <div style="width:100%; border-top:1px dashed #444; padding-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
             <button class="btn-add" onclick="unlockAllPC()" style="background: rgba(255,159,28,0.1); border: 1px solid var(--orange); color: var(--orange);">🧹 清除昨收鎖定</button>
-            <button class="btn-add" onclick="factoryReset()" style="background: rgba(255,68,68,0.1); border: 1px solid var(--red); color: var(--red);">🗑️ 系統重置</button>
+            <button class="btn-add" onclick="factoryReset()" style="background: rgba(255,68,68,0.1); border: 1px solid var(--red); color: var(--red);">🗑️ 系統重置 (清空資料)</button>
         </div>
     </div>
 
@@ -1580,7 +1631,6 @@
         let sumPlCard = document.getElementById('sum-pl-card');
         if(sumPlCard) sumPlCard.style.border = `1px solid ${principal > 0 ? (truePnL>=0?'var(--red)':'var(--green)') : '#333'}`;
         
-        // 宏觀今日損益計算 (今日總值 - 昨日總值)
         let macroDayChange = 0;
         let dayChangePct = "0.00";
         
@@ -1624,7 +1674,7 @@
         if(monEl) { monEl.innerText = "NT$ " + Math.round(ann/12).toLocaleString(); monEl.className = isPrivate ? 'privacy-mask' : ''; }
 
         let expRaw = document.getElementById('annual-expenses').value.replace(/,/g, '');
-        let annualExpenses = Number(expRaw) || 1;
+        let annualExpenses = Number(expRaw) || 1; // 避免除以零
         
         let fiMultiplier = annualExpenses > 0 ? (tVal / annualExpenses).toFixed(1) : 0;
         let fiEl = document.getElementById('fi-multiplier');
@@ -1642,7 +1692,7 @@
             safeEl.className = isPrivate ? 'privacy-mask' : '';
         }
 
-        // 🏆 闖關系統邏輯
+        // 🏆 重新設計的闖關系統邏輯
         let currentFiX = Number(fiMultiplier);
         let progressTextEl = document.getElementById('progress-text');
         if (progressTextEl) {
@@ -1655,13 +1705,19 @@
         let progressFillEl = document.getElementById('progress-fill');
         if (progressFillEl) progressFillEl.style.width = progressPercent + "%";
 
+        // 動態計算每個關卡的金額與位置
         milestones.forEach((m, i) => {
             let marker = document.getElementById(`m${i+1}`);
             if (marker) {
                 let dot = marker.querySelector('.milestone-dot');
                 let label = marker.querySelector('.milestone-label');
+                let amtEl = document.getElementById(`m${i+1}-a`);
                 
-                // 動態調整標記點位置
+                let targetAmt = m * annualExpenses;
+                if (amtEl) {
+                    amtEl.innerText = "$" + Math.round(targetAmt / 10000).toLocaleString() + "萬";
+                }
+
                 let leftPercent = Math.min(100, (m / maxTarget) * 100);
                 marker.style.left = leftPercent + "%";
 
