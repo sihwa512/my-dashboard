@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V71.1 闖關優化版</title>
+    <title>退休資產戰情室 V71.2 長條圖版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -26,19 +26,16 @@
         /* 🏆 重新設計的闖關進度條樣式 */
         .progress-section { background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #444; }
         .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .progress-bar-container { position: relative; height: 12px; background: #333; border-radius: 6px; margin: 45px 0 60px 0; } /* 增加上下 margin 容納文字 */
+        .progress-bar-container { position: relative; height: 12px; background: #333; border-radius: 6px; margin: 45px 0 60px 0; } 
         .progress-fill { position: absolute; height: 100%; background: linear-gradient(90deg, var(--blue), var(--green)); border-radius: 6px; transition: width 1s ease-in-out; }
         
-        /* 關鍵：利用絕對定位與 transform，讓圓點精準落在 bar 上 */
         .milestone-marker { position: absolute; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; z-index: 5; }
         .milestone-dot { width: 16px; height: 16px; background: #252836; border: 2px solid #555; border-radius: 50%; transition: 0.3s; box-sizing: border-box; }
         .milestone-dot.reached { background: var(--green); border-color: #fff; box-shadow: 0 0 10px var(--green); }
         
-        /* 文字往上飄 */
         .milestone-label { position: absolute; bottom: 100%; margin-bottom: 12px; font-size: 0.85rem; color: #888; white-space: nowrap; transition: 0.3s; }
         .milestone-label.reached { color: var(--green); font-weight: bold; }
         
-        /* 數據往下飄 */
         .milestone-data { position: absolute; top: 100%; margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
         .milestone-target { font-size: 0.9rem; color: var(--orange); font-weight: bold; line-height: 1; }
         .milestone-amt { font-size: 0.8rem; color: #aaa; white-space: nowrap; line-height: 1; }
@@ -162,7 +159,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V71.1 🏆</h2>
+        <h2>📊 綜合退休戰情室 V71.2 長條圖版</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="openHistoryLedgerModal()" style="border-color:var(--orange); color:var(--orange);">📜 交易紀錄</span>
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
@@ -265,7 +262,7 @@
 
     <div class="charts-wrapper" id="chart-wrapper">
         <div class="chart-container chart-line">
-            <div class="chart-header" style="color: var(--purple);">📈 歷史淨值曲線圖</div>
+            <div class="chart-header" style="color: var(--purple);">📈 歷史淨值長條圖</div>
             <div class="canvas-wrapper"><canvas id="historyChart"></canvas></div>
         </div>
         <div class="chart-container chart-donut">
@@ -1342,6 +1339,7 @@
         });
     }
 
+    // 💡 V71.2 長條圖整合 (Bar Chart)
     function drawChart(historyData) {
         if (typeof Chart === 'undefined') return;
         const canvasEl = document.getElementById('historyChart');
@@ -1354,9 +1352,42 @@
 
         if (equityChart) equityChart.destroy(); 
         equityChart = new Chart(ctx, {
-            type: 'line',
-            data: { labels: shortLabels, datasets: [{ label: '總市值', data: data, borderColor: '#bd93f9', backgroundColor: 'rgba(189, 147, 249, 0.1)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 4, pointHoverRadius: 6 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } } } }
+            type: 'bar',
+            data: { 
+                labels: shortLabels, 
+                datasets: [{ 
+                    label: '總市值', 
+                    data: data, 
+                    backgroundColor: 'rgba(189, 147, 249, 0.6)',
+                    borderColor: '#bd93f9',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    hoverBackgroundColor: 'rgba(189, 147, 249, 0.9)'
+                }] 
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { 
+                    legend: { display: false },
+                    datalabels: { display: false } 
+                }, 
+                scales: { 
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } }, 
+                    y: { 
+                        grid: { color: 'rgba(255,255,255,0.05)' }, 
+                        ticks: { 
+                            color: '#888',
+                            callback: function(value) {
+                                if (value >= 10000) {
+                                    return (value / 10000) + '萬';
+                                }
+                                return value;
+                            }
+                        } 
+                    } 
+                } 
+            }
         });
     }
 
@@ -1631,6 +1662,7 @@
         let sumPlCard = document.getElementById('sum-pl-card');
         if(sumPlCard) sumPlCard.style.border = `1px solid ${principal > 0 ? (truePnL>=0?'var(--red)':'var(--green)') : '#333'}`;
         
+        // 宏觀今日損益計算
         let macroDayChange = 0;
         let dayChangePct = "0.00";
         
@@ -1674,7 +1706,7 @@
         if(monEl) { monEl.innerText = "NT$ " + Math.round(ann/12).toLocaleString(); monEl.className = isPrivate ? 'privacy-mask' : ''; }
 
         let expRaw = document.getElementById('annual-expenses').value.replace(/,/g, '');
-        let annualExpenses = Number(expRaw) || 1; // 避免除以零
+        let annualExpenses = Number(expRaw) || 1; 
         
         let fiMultiplier = annualExpenses > 0 ? (tVal / annualExpenses).toFixed(1) : 0;
         let fiEl = document.getElementById('fi-multiplier');
@@ -1692,7 +1724,7 @@
             safeEl.className = isPrivate ? 'privacy-mask' : '';
         }
 
-        // 🏆 重新設計的闖關系統邏輯
+        // 🏆 闖關系統邏輯
         let currentFiX = Number(fiMultiplier);
         let progressTextEl = document.getElementById('progress-text');
         if (progressTextEl) {
@@ -1705,7 +1737,6 @@
         let progressFillEl = document.getElementById('progress-fill');
         if (progressFillEl) progressFillEl.style.width = progressPercent + "%";
 
-        // 動態計算每個關卡的金額與位置
         milestones.forEach((m, i) => {
             let marker = document.getElementById(`m${i+1}`);
             if (marker) {
