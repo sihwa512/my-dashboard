@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>退休資產戰情室 V71.2 長條圖版</title>
+    <title>退休資產戰情室 V72.0 報酬日曆版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
@@ -23,10 +23,10 @@
         .summary-card b { font-size: 1.6rem; display: block; margin-top: 8px; font-family: 'Consolas', monospace; }
         small { font-size: 0.9rem; } 
         
-        /* 🏆 重新設計的闖關進度條樣式 */
+        /* 🏆 闖關進度條樣式重構 (解決重疊問題) */
         .progress-section { background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #444; }
         .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .progress-bar-container { position: relative; height: 12px; background: #333; border-radius: 6px; margin: 45px 0 60px 0; } 
+        .progress-bar-container { position: relative; height: 12px; background: #333; border-radius: 6px; margin: 40px 0 50px 0; } 
         .progress-fill { position: absolute; height: 100%; background: linear-gradient(90deg, var(--blue), var(--green)); border-radius: 6px; transition: width 1s ease-in-out; }
         
         .milestone-marker { position: absolute; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; z-index: 5; }
@@ -39,6 +39,24 @@
         .milestone-data { position: absolute; top: 100%; margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
         .milestone-target { font-size: 0.9rem; color: var(--orange); font-weight: bold; line-height: 1; }
         .milestone-amt { font-size: 0.8rem; color: #aaa; white-space: nowrap; line-height: 1; }
+
+        /* 📅 報酬日曆樣式 */
+        .calendar-section { background: rgba(0,0,0,0.2); border-radius: 15px; border: 1px solid #333; margin-bottom: 20px; overflow: hidden; }
+        .cal-tabs { display: flex; background: #252836; border-bottom: 1px solid #444; }
+        .cal-tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; color: #888; font-weight: bold; transition: 0.3s; }
+        .cal-tab.active { color: var(--blue); background: rgba(0, 212, 255, 0.1); border-bottom: 2px solid var(--blue); }
+        .cal-content { padding: 15px; display: none; }
+        .cal-content.active { display: block; animation: fadeIn 0.3s; }
+        
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .cal-header-day { text-align: center; color: #aaa; font-size: 0.85rem; padding: 5px; background: rgba(255,255,255,0.05); border-radius: 4px; }
+        .cal-cell { background: #1b1e2e; border: 1px solid #2d303e; border-radius: 6px; padding: 6px; min-height: 65px; display: flex; flex-direction: column; }
+        .cal-cell.empty { background: transparent; border: none; }
+        .cal-date { font-size: 0.8rem; color: #666; margin-bottom: auto; }
+        .cal-val { font-weight: bold; font-size: 0.95rem; text-align: center; margin-top: 5px; }
+        
+        .cal-list-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px dashed #333; }
+        .cal-list-row:last-child { border-bottom: none; }
 
         .principal-input-wrapper { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 5px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 6px; }
         .principal-input-wrapper input { width: 90px; background: transparent; border: none; border-bottom: 1px dashed #555; color: #fff; text-align: center; font-size: 0.95rem; font-weight: bold; padding: 2px; outline: none; border-radius: 0; }
@@ -159,7 +177,7 @@
 <body>
 <div class="container">
     <div class="header-container">
-        <h2>📊 綜合退休戰情室 V71.2 長條圖版</h2>
+        <h2>📊 綜合退休戰情室 V72.0 日曆版</h2>
         <div class="header-actions">
             <span class="icon-btn" onclick="openHistoryLedgerModal()" style="border-color:var(--orange); color:var(--orange);">📜 交易紀錄</span>
             <span class="icon-btn" onclick="exportData()" title="備份資料">💾</span>
@@ -260,6 +278,36 @@
         </div>
     </div>
 
+    <div class="calendar-section">
+        <div class="cal-tabs">
+            <div class="cal-tab active" onclick="switchCalTab(0)" id="ct-btn-0">📅 本月日曆</div>
+            <div class="cal-tab" onclick="switchCalTab(1)" id="ct-btn-1">📊 月報酬</div>
+            <div class="cal-tab" onclick="switchCalTab(2)" id="ct-btn-2">📈 年報酬</div>
+        </div>
+        
+        <div class="cal-content active" id="ct-0">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:flex-end;">
+                <span style="font-size:1.1rem; color:#aaa; font-weight:bold;" id="cal-month-title">-</span>
+                <div style="text-align:right;">
+                    <span style="font-size:0.8rem; color:#888;">本月累積損益</span><br>
+                    <b id="cal-month-total" style="font-size:1.3rem;">-</b>
+                </div>
+            </div>
+            <div class="cal-grid" id="cal-grid-box">
+                </div>
+        </div>
+
+        <div class="cal-content" id="ct-1">
+            <div style="margin-bottom:15px; color:var(--blue); font-weight:bold;">各月淨損益結算</div>
+            <div id="cal-monthly-list"></div>
+        </div>
+
+        <div class="cal-content" id="ct-2">
+            <div style="margin-bottom:15px; color:var(--purple); font-weight:bold;">歷年淨損益結算</div>
+            <div id="cal-yearly-list"></div>
+        </div>
+    </div>
+
     <div class="charts-wrapper" id="chart-wrapper">
         <div class="chart-container chart-line">
             <div class="chart-header" style="color: var(--purple);">📈 歷史淨值長條圖</div>
@@ -322,7 +370,6 @@
     <button class="btn-fetch" onclick="fetchAll()" id="btn-f">🚀 手動極速同步</button>
 
     <div class="bottom-cards-grid">
-        
         <div class="summary-card" style="text-align: left; border: 1px solid var(--blue); box-shadow: 0 0 15px rgba(0, 212, 255, 0.05);">
             <div class="card-header-flex">
                 <span style="color:var(--blue); font-weight:bold;">⚖️ 目標再平衡</span>
@@ -583,6 +630,136 @@
         });
     }
 
+    // 📅 報酬日曆 Tab 切換
+    function switchCalTab(index) {
+        for (let i = 0; i <= 2; i++) {
+            document.getElementById(`ct-btn-${i}`).classList.remove('active');
+            document.getElementById(`ct-${i}`).classList.remove('active');
+        }
+        document.getElementById(`ct-btn-${index}`).classList.add('active');
+        document.getElementById(`ct-${index}`).classList.add('active');
+    }
+
+    // 📅 處理歷史資料，轉換為每日/每月/歷年損益
+    function processHistoryForCalendar() {
+        let hStored = localStorage.getItem('equityHistory');
+        let historyData = {};
+        if (hStored && hStored !== "undefined") {
+            historyData = JSON.parse(hStored);
+        }
+        
+        let dates = Object.keys(historyData).sort();
+        let dailyPL = {};
+        let monthlyPL = {};
+        let yearlyPL = {};
+
+        for (let i = 1; i < dates.length; i++) {
+            let prevDate = dates[i-1];
+            let currDate = dates[i];
+            let pl = historyData[currDate] - historyData[prevDate];
+            
+            dailyPL[currDate] = pl;
+
+            let monthKey = currDate.substring(0, 7); // YYYY-MM
+            let yearKey = currDate.substring(0, 4);  // YYYY
+
+            monthlyPL[monthKey] = (monthlyPL[monthKey] || 0) + pl;
+            yearlyPL[yearKey] = (yearlyPL[yearKey] || 0) + pl;
+        }
+        return { dailyPL, monthlyPL, yearlyPL };
+    }
+
+    // 📅 格式化數字 (顯示為 萬)
+    function formatPL(num) {
+        if (num === 0) return '0';
+        let sign = num > 0 ? '+' : '';
+        let absNum = Math.abs(num);
+        if (absNum >= 10000) return sign + (num / 10000).toFixed(1) + '萬';
+        return sign + Math.round(num).toLocaleString();
+    }
+
+    // 📅 渲染整個報酬日曆模組
+    function renderCalendarUI() {
+        const { dailyPL, monthlyPL, yearlyPL } = processHistoryForCalendar();
+        
+        let twTime = new Date().toLocaleString("en-US", {timeZone: "Asia/Taipei"});
+        let today = new Date(twTime);
+        let year = today.getFullYear();
+        let month = today.getMonth(); // 0-11
+        
+        let monthKey = `${year}-${String(month+1).padStart(2, '0')}`;
+        
+        // 1. 渲染本月日曆
+        document.getElementById('cal-month-title').innerText = `${year}年${month+1}月`;
+        let mTotal = monthlyPL[monthKey] || 0;
+        let mColor = mTotal >= 0 ? 'var(--red)' : 'var(--green)'; // 台灣紅漲綠跌
+        let mSign = mTotal > 0 ? '+' : '';
+        document.getElementById('cal-month-total').innerHTML = `<span style="color:${mColor}">${mSign}${Math.round(mTotal).toLocaleString()}</span>`;
+
+        let firstDay = new Date(year, month, 1).getDay(); // 0(Sun) - 6(Sat)
+        let daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        let calHtml = '<div class="cal-header-day">日</div><div class="cal-header-day">一</div><div class="cal-header-day">二</div><div class="cal-header-day">三</div><div class="cal-header-day">四</div><div class="cal-header-day">五</div><div class="cal-header-day">六</div>';
+        
+        for (let i = 0; i < firstDay; i++) {
+            calHtml += `<div class="cal-cell empty"></div>`;
+        }
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+            let dateStr = `${monthKey}-${String(day).padStart(2, '0')}`;
+            let pl = dailyPL[dateStr];
+            
+            let cellStyle = "cal-cell";
+            if (isPrivate) cellStyle += " privacy-mask";
+            
+            if (pl !== undefined) {
+                let color = pl >= 0 ? 'var(--red)' : 'var(--green)';
+                let bg = pl >= 0 ? 'rgba(255,68,68,0.1)' : 'rgba(0,255,136,0.1)';
+                if (pl === 0) { color = '#888'; bg = 'transparent'; }
+                
+                calHtml += `<div class="${cellStyle}" style="background:${bg}; border-color:${color}">
+                                <span class="cal-date">${day}</span>
+                                <div class="cal-val" style="color:${color};">${formatPL(pl)}</div>
+                            </div>`;
+            } else {
+                calHtml += `<div class="${cellStyle}"><span class="cal-date">${day}</span></div>`;
+            }
+        }
+        document.getElementById('cal-grid-box').innerHTML = calHtml;
+
+        // 2. 渲染月報酬列表
+        let mKeys = Object.keys(monthlyPL).sort().reverse(); // 新的在上面
+        let mHtml = '';
+        if (mKeys.length === 0) mHtml = '<div style="color:#666; padding:10px;">尚無資料</div>';
+        mKeys.forEach(k => {
+            let pl = monthlyPL[k];
+            let color = pl >= 0 ? 'var(--red)' : 'var(--green)';
+            let sign = pl > 0 ? '+' : '';
+            let valClass = isPrivate ? "privacy-mask" : "";
+            mHtml += `<div class="cal-list-row">
+                        <span style="color:#aaa;">${k.replace('-','年')}月</span>
+                        <span class="${valClass}" style="color:${color}; font-weight:bold; font-size:1.1rem;">${sign}${Math.round(pl).toLocaleString()}</span>
+                      </div>`;
+        });
+        document.getElementById('cal-monthly-list').innerHTML = mHtml;
+
+        // 3. 渲染年報酬列表
+        let yKeys = Object.keys(yearlyPL).sort().reverse();
+        let yHtml = '';
+        if (yKeys.length === 0) yHtml = '<div style="color:#666; padding:10px;">尚無資料</div>';
+        yKeys.forEach(k => {
+            let pl = yearlyPL[k];
+            let color = pl >= 0 ? 'var(--red)' : 'var(--green)';
+            let sign = pl > 0 ? '+' : '';
+            let valClass = isPrivate ? "privacy-mask" : "";
+            yHtml += `<div class="cal-list-row">
+                        <span style="color:#aaa;">${k}年 全年總計</span>
+                        <span class="${valClass}" style="color:${color}; font-weight:bold; font-size:1.2rem;">${sign}${Math.round(pl).toLocaleString()}</span>
+                      </div>`;
+        });
+        document.getElementById('cal-yearly-list').innerHTML = yHtml;
+    }
+
     const fmtP = (val) => {
         if (val === undefined || isNaN(val) || val === 0) return '-';
         return Number(parseFloat(val).toFixed(2)).toString();
@@ -687,11 +864,19 @@
         event.target.value = '';
     }
 
-    function togglePrivacy() { isPrivate = !isPrivate; localStorage.setItem('privacy_v28', isPrivate); updateEyeUI(); calculate(); }
+    function togglePrivacy() { 
+        isPrivate = !isPrivate; 
+        localStorage.setItem('privacy_v28', isPrivate); 
+        updateEyeUI(); 
+        calculate(); 
+    }
+    
     function updateEyeUI() { 
         if(!document.getElementById('eye-icon')) return;
         document.getElementById('eye-icon').innerText = isPrivate ? '🙈' : '👁️'; 
         if(document.getElementById('chart-wrapper')) document.getElementById('chart-wrapper').className = isPrivate ? 'charts-wrapper privacy-mask' : 'charts-wrapper'; 
+        // 同步更新日曆遮罩
+        renderCalendarUI();
     }
     
     function toggleEditMode() {
@@ -1339,7 +1524,7 @@
         });
     }
 
-    // 💡 V71.2 長條圖整合 (Bar Chart)
+    // 💡 V72.0: 長條圖模式
     function drawChart(historyData) {
         if (typeof Chart === 'undefined') return;
         const canvasEl = document.getElementById('historyChart');
@@ -1889,10 +2074,21 @@
                 
                 historyData[todayDate] = Math.round(tVal);
                 let keys = Object.keys(historyData).sort();
-                if (keys.length > 30) delete historyData[keys[0]]; 
+                
+                // 💡 V72.0 歷史數據解鎖：從 30 天擴展到 365 天，讓日曆與年報酬正常運作！
+                if (keys.length > 365) delete historyData[keys[0]]; 
                 
                 localStorage.setItem('equityHistory', JSON.stringify(historyData));
-                drawChart(historyData);
+                
+                // 只取最近 30 天畫圖，保持圖表美觀
+                let chartKeys = keys.slice(-30);
+                let chartData = {};
+                chartKeys.forEach(k => chartData[k] = historyData[k]);
+                drawChart(chartData);
+                
+                // 渲染報酬日曆
+                renderCalendarUI();
+                
             } catch(e) {
                 localStorage.removeItem('equityHistory');
             }
